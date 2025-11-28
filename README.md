@@ -4,13 +4,6 @@ Local-first observability for developers.
 
 Glint is a lightweight OTLP collector with a modern UI. No Docker, no complex setup — just one binary.
 
-## Features
-
-- **OTLP native** — receives traces, logs, and metrics via gRPC/HTTP
-- **Single binary** — no external dependencies
-- **Fast** — powered by DuckDB for analytical queries
-- **Beautiful UI** — not another enterprise dashboard
-
 ## Install
 ```bash
 # coming soon
