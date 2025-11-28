@@ -77,6 +77,12 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: choco install protoc
 
+      - name: Disable mold on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "RUSTFLAGS=" >> $GITHUB_ENV
+          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=cc" >> $GITHUB_ENV
+
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
@@ -101,6 +107,9 @@ jobs:
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: ""
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: "cc"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -116,6 +125,9 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: ""
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: "cc"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -173,6 +185,12 @@ jobs:
       - name: Install protobuf compiler (Windows)
         if: matrix.os == 'windows-latest'
         run: choco install protoc
+
+      - name: Disable mold on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "RUSTFLAGS=" >> $GITHUB_ENV
+          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=cc" >> $GITHUB_ENV
 
       - name: Cache cargo registry
         uses: actions/cache@v4
