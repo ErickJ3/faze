@@ -134,6 +134,7 @@ pub fn convert_resource_spans(resource_spans: &[ResourceSpans]) -> Vec<GlintSpan
 mod tests {
     use super::*;
     use crate::proto::opentelemetry::proto::trace::v1::ScopeSpans;
+    use std;
 
     #[test]
     fn test_convert_span_kind() {
@@ -244,10 +245,10 @@ mod tests {
     #[test]
     fn test_convert_any_value_double() {
         let value = AnyValue {
-            value: Some(any_value::Value::DoubleValue(3.14)),
+            value: Some(any_value::Value::DoubleValue(std::f64::consts::PI)),
         };
         let result = convert_any_value(&value).unwrap();
-        assert_eq!(result, AttributeValue::Double(3.14));
+        assert_eq!(result, AttributeValue::Double(std::f64::consts::PI));
     }
 
     #[test]
@@ -339,7 +340,7 @@ mod tests {
             KeyValue {
                 key: "double_key".to_string(),
                 value: Some(AnyValue {
-                    value: Some(any_value::Value::DoubleValue(2.718)),
+                    value: Some(any_value::Value::DoubleValue(std::f64::consts::E)),
                 }),
             },
         ];
@@ -348,7 +349,7 @@ mod tests {
         assert_eq!(attrs.get_string("string_key"), Some("value"));
         assert_eq!(attrs.get_int("int_key"), Some(123));
         assert_eq!(attrs.get_bool("bool_key"), Some(false));
-        assert_eq!(attrs.get_double("double_key"), Some(2.718));
+        assert_eq!(attrs.get_double("double_key"), Some(std::f64::consts::E));
     }
 
     #[test]

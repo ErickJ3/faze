@@ -447,7 +447,7 @@ mod tests {
     #[tokio::test]
     async fn test_list_services() {
         let storage = Storage::new_in_memory().unwrap();
-        let services = vec!["service-a", "service-b", "service-c", "service-a"];
+        let services = ["service-a", "service-b", "service-c", "service-a"];
         for (i, service) in services.iter().enumerate() {
             let span = Span::new(
                 format!("span{}", i),
@@ -638,7 +638,7 @@ mod tests {
         assert_eq!(trace_info.trace_id, "test-trace");
         assert_eq!(trace_info.service_name, Some("test-service".to_string()));
         assert_eq!(trace_info.span_count, 1);
-        assert_eq!(trace_info.has_errors, false);
+        assert!(!trace_info.has_errors);
         assert_eq!(trace_info.duration_ms, 100.0);
     }
 
