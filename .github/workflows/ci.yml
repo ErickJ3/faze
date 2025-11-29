@@ -80,13 +80,57 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --all-features
 
-  build:
-    name: Build Release
-    needs: test
+  build_ui:
+    name: Build UI Assets
     runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "BUN_INSTALL=$HOME/.bun" >> $GITHUB_ENV
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        id: bun-cache
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('ui/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        if: steps.bun-cache.outputs.cache-hit != 'true'
+        run: bun install
+        working-directory: ui
+
+      - name: Build UI
+        run: bun run build
+        working-directory: ui
+
+      - name: Upload ui artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: glint-ui-dist
+          path: ui/dist
+          retention-days: 1
+
+  build:
+    name: Build Release
+    needs: [test, build_ui]
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: glint-ui-dist
+          path: ui/dist
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
