@@ -1,7 +1,6 @@
 [alias]
 dev = "build"
 run-dev = "run -p glint-cli"
-watch = "watch -x 'check --all'"
 test-all = "test --workspace"
 test-fast = "test --workspace --lib"
 build-release = "build --release"

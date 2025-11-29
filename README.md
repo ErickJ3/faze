@@ -16,7 +16,7 @@ curl -fsSL https://glint.dev/install.sh | sh
 # automatically detects your project and stores data in ~/.config/glint/<project>.db
 glint serve
 
-# open http://localhost:7070
+# open http://localhost:7070 for the bundled web UI
 ```
 
 Point your OTLP exporter to:
@@ -89,6 +89,8 @@ cargo build --release
 
 # The binary will be at target/release/glint
 ```
+
+This produces `ui/dist`, which the server serves at `http://localhost:7070` (or the custom port you pass to `glint serve`).
 
 ## License
 
