@@ -1,4 +1,7 @@
-use crate::routes::{AppState, get_trace, health_check, list_logs, list_services, list_traces};
+use crate::{
+    routes::{AppState, get_trace, health_check, list_logs, list_services, list_traces},
+    ui,
+};
 use axum::{Router, routing::get};
 use glint::Storage;
 use std::net::SocketAddr;
@@ -40,6 +43,7 @@ impl ApiServer {
             // Enable CORS for browser access
             .layer(CorsLayer::permissive())
             .with_state(state)
+            .fallback(ui::fallback_service())
     }
 
     /// Start the API server

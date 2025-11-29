@@ -116,6 +116,7 @@ async fn serve(
     info!("  OTLP HTTP endpoint: http://localhost:4318");
     info!("  REST API:           http://localhost:{}/api", port);
     info!("  Health check:       http://localhost:{}/health", port);
+    info!("  Web UI:             http://localhost:{}", port);
 
     tokio::select! {
         result = grpc_server => {

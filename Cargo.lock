@@ -683,6 +683,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "glint",
+ "mime_guess",
  "rust-embed",
  "serde",
  "serde_json",

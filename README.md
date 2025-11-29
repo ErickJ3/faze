@@ -16,7 +16,7 @@ curl -fsSL https://glint.dev/install.sh | sh
 # automatically detects your project and stores data in ~/.config/glint/<project>.db
 glint serve
 
-# open http://localhost:7070
+# open http://localhost:7070 for the bundled web UI
 ```
 
 Point your OTLP exporter to:
