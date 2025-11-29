@@ -2,7 +2,7 @@ default:
     @just --list
 
 dev-server:
-    cargo watch -x 'run -p glint-cli -- serve'
+    RUST_LOG=info cargo watch -x 'run -p glint-cli -- serve'
 
 dev-ui:
     cd ui && bun dev
