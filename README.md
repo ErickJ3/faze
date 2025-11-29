@@ -90,8 +90,6 @@ cargo build --release
 # The binary will be at target/release/glint
 ```
 
-This produces `ui/dist`, which the server serves at `http://localhost:7070` (or the custom port you pass to `glint serve`).
-
 ## License
 
 MIT
