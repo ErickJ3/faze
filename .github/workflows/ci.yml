@@ -11,78 +11,8 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  quality:
-    name: Fmt & Clippy
-    runs-on: self-hosted
-    env:
-      RUSTFLAGS: ""
-      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: "cc"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      - name: Install protobuf compiler
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler clang
-
-      - name: Cache cargo registry & index
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-quality-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo target
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-quality-target-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      - name: Run clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-
-  test:
-    name: Test
-    needs: quality
-    runs-on: self-hosted
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install protobuf
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler clang
-
-      - name: Disable mold on Linux
-        run: |
-          echo "RUSTFLAGS=" >> $GITHUB_ENV
-          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=cc" >> $GITHUB_ENV
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run tests
-        run: cargo test --workspace --all-features
-
   build_ui:
     name: Build UI Assets
-    needs: [test]
     runs-on: self-hosted
     steps:
       - name: Checkout code
@@ -118,6 +48,88 @@ jobs:
           name: glint-ui-dist
           path: ui/dist
           retention-days: 1
+
+  quality:
+    name: Fmt & Clippy
+    runs-on: self-hosted
+    needs: [build_ui]
+    env:
+      RUSTFLAGS: ""
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: "cc"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: glint-ui-dist
+          path: ui/dist
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler clang
+
+      - name: Cache cargo registry & index
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-quality-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo target
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-quality-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+  test:
+    name: Test
+    needs: [quality, build_ui]
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: glint-ui-dist
+          path: ui/dist
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install protobuf
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler clang
+
+      - name: Disable mold on Linux
+        run: |
+          echo "RUSTFLAGS=" >> $GITHUB_ENV
+          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=cc" >> $GITHUB_ENV
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo test --workspace --all-features
 
   build:
     name: Build Release
