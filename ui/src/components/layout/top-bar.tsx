@@ -1,6 +1,11 @@
-import { ThemeToggle } from "./theme-toggle";
+import { useProject } from "@/hooks/api";
 
 export function Topbar() {
+  const { data: project } = useProject();
+
+  const displayPath = project?.path || "~/my-app";
+  const shortPath = displayPath.replace(/^\/home\/[^/]+/, "~");
+
   return (
     <header
       className="
@@ -10,12 +15,14 @@ export function Topbar() {
       "
     >
       <div className="text-sm text-muted-foreground font-mono">
-        project: <span className="text-foreground">~/my-app</span>
+        project:{" "}
+        <span className="text-foreground" title={displayPath}>
+          {shortPath}
+        </span>
       </div>
 
       <div className="ml-auto flex items-center gap-4">
-        <div className="text-xs text-muted-foreground font-mono">⌘K</div>
-        <ThemeToggle />
+        <div className="text-sm text-muted-foreground font-mono">Cltr+K</div>
       </div>
     </header>
   );

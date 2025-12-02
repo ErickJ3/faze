@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Span } from "@/types";
 import { formatDurationCompact } from "@/lib/formatters";
 import { SpanDetailSheet } from "./span-detail-sheet";
@@ -156,6 +156,29 @@ export function SpanWaterfall({ spans }: SpanWaterfallProps) {
   const [selectedSpan, setSelectedSpan] = useState<Span | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
+  const spanTree = useMemo(() => {
+    if (!spans || spans.length === 0) return null;
+    try {
+      return buildSpanTree(spans);
+    } catch {
+      return null;
+    }
+  }, [spans]);
+
+  useEffect(() => {
+    if (!spanTree) return;
+
+    const allSpanIds = new Set<string>();
+    const traverse = (node: SpanNode) => {
+      if (node.children.length > 0) {
+        allSpanIds.add(node.span_id);
+        node.children.forEach(traverse);
+      }
+    };
+    spanTree.roots.forEach(traverse);
+    setExpanded(allSpanIds);
+  }, [spanTree]);
+
   if (!spans || spans.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 border border-border">
@@ -164,8 +187,16 @@ export function SpanWaterfall({ spans }: SpanWaterfallProps) {
     );
   }
 
+  if (!spanTree) {
+    return (
+      <div className="flex items-center justify-center h-32 border border-border">
+        <p className="text-sm text-foreground/50">Error displaying waterfall</p>
+      </div>
+    );
+  }
+
   try {
-    const { roots, minTime, maxTime } = buildSpanTree(spans);
+    const { roots, minTime, maxTime } = spanTree;
     const totalDuration = (maxTime - minTime) / 1_000_000;
 
     if (!isFinite(totalDuration) || totalDuration <= 0) {

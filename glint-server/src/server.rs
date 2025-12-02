@@ -1,6 +1,7 @@
 use crate::{
     routes::{
-        AppState, get_trace, health_check, list_logs, list_metrics, list_services, list_traces,
+        AppState, get_project_info, get_trace, health_check, list_logs, list_metrics,
+        list_services, list_traces,
     },
     ui,
 };
@@ -34,6 +35,7 @@ impl ApiServer {
 
         Router::new()
             .route("/health", get(health_check))
+            .route("/api/project", get(get_project_info))
             .route("/api/traces", get(list_traces))
             .route("/api/traces/{id}", get(get_trace))
             .route("/api/logs", get(list_logs))
@@ -51,6 +53,7 @@ impl ApiServer {
 
         info!("Starting API server on {}", addr);
         info!("  Health check:  http://localhost:{}/health", self.port);
+        info!("  Project info:  http://localhost:{}/api/project", self.port);
         info!("  List traces:   http://localhost:{}/api/traces", self.port);
         info!(
             "  Get trace:     http://localhost:{}/api/traces/:id",
