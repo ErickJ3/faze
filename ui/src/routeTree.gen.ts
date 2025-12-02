@@ -9,27 +9,202 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as TracesIndexRouteImport } from './routes/traces/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as MetricsIndexRouteImport } from './routes/metrics/index'
+import { Route as LogsIndexRouteImport } from './routes/logs/index'
+import { Route as TracesTraceIdRouteImport } from './routes/traces/$traceId'
+import { Route as ServicesServiceNameRouteImport } from './routes/services/$serviceName'
 
-export interface FileRoutesByFullPath {}
-export interface FileRoutesByTo {}
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TracesIndexRoute = TracesIndexRouteImport.update({
+  id: '/traces/',
+  path: '/traces/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesIndexRoute = ServicesIndexRouteImport.update({
+  id: '/services/',
+  path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetricsIndexRoute = MetricsIndexRouteImport.update({
+  id: '/metrics/',
+  path: '/metrics/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LogsIndexRoute = LogsIndexRouteImport.update({
+  id: '/logs/',
+  path: '/logs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TracesTraceIdRoute = TracesTraceIdRouteImport.update({
+  id: '/traces/$traceId',
+  path: '/traces/$traceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesServiceNameRoute = ServicesServiceNameRouteImport.update({
+  id: '/services/$serviceName',
+  path: '/services/$serviceName',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/services/$serviceName': typeof ServicesServiceNameRoute
+  '/traces/$traceId': typeof TracesTraceIdRoute
+  '/logs': typeof LogsIndexRoute
+  '/metrics': typeof MetricsIndexRoute
+  '/services': typeof ServicesIndexRoute
+  '/settings': typeof SettingsIndexRoute
+  '/traces': typeof TracesIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/services/$serviceName': typeof ServicesServiceNameRoute
+  '/traces/$traceId': typeof TracesTraceIdRoute
+  '/logs': typeof LogsIndexRoute
+  '/metrics': typeof MetricsIndexRoute
+  '/services': typeof ServicesIndexRoute
+  '/settings': typeof SettingsIndexRoute
+  '/traces': typeof TracesIndexRoute
+}
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/services/$serviceName': typeof ServicesServiceNameRoute
+  '/traces/$traceId': typeof TracesTraceIdRoute
+  '/logs/': typeof LogsIndexRoute
+  '/metrics/': typeof MetricsIndexRoute
+  '/services/': typeof ServicesIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/traces/': typeof TracesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: never
+  fullPaths:
+    | '/'
+    | '/services/$serviceName'
+    | '/traces/$traceId'
+    | '/logs'
+    | '/metrics'
+    | '/services'
+    | '/settings'
+    | '/traces'
   fileRoutesByTo: FileRoutesByTo
-  to: never
-  id: '__root__'
+  to:
+    | '/'
+    | '/services/$serviceName'
+    | '/traces/$traceId'
+    | '/logs'
+    | '/metrics'
+    | '/services'
+    | '/settings'
+    | '/traces'
+  id:
+    | '__root__'
+    | '/'
+    | '/services/$serviceName'
+    | '/traces/$traceId'
+    | '/logs/'
+    | '/metrics/'
+    | '/services/'
+    | '/settings/'
+    | '/traces/'
   fileRoutesById: FileRoutesById
 }
-export interface RootRouteChildren {}
-
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  ServicesServiceNameRoute: typeof ServicesServiceNameRoute
+  TracesTraceIdRoute: typeof TracesTraceIdRoute
+  LogsIndexRoute: typeof LogsIndexRoute
+  MetricsIndexRoute: typeof MetricsIndexRoute
+  ServicesIndexRoute: typeof ServicesIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+  TracesIndexRoute: typeof TracesIndexRoute
 }
 
-const rootRouteChildren: RootRouteChildren = {}
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/traces/': {
+      id: '/traces/'
+      path: '/traces'
+      fullPath: '/traces'
+      preLoaderRoute: typeof TracesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/': {
+      id: '/services/'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/metrics/': {
+      id: '/metrics/'
+      path: '/metrics'
+      fullPath: '/metrics'
+      preLoaderRoute: typeof MetricsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/logs/': {
+      id: '/logs/'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof LogsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/traces/$traceId': {
+      id: '/traces/$traceId'
+      path: '/traces/$traceId'
+      fullPath: '/traces/$traceId'
+      preLoaderRoute: typeof TracesTraceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/$serviceName': {
+      id: '/services/$serviceName'
+      path: '/services/$serviceName'
+      fullPath: '/services/$serviceName'
+      preLoaderRoute: typeof ServicesServiceNameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
+}
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  ServicesServiceNameRoute: ServicesServiceNameRoute,
+  TracesTraceIdRoute: TracesTraceIdRoute,
+  LogsIndexRoute: LogsIndexRoute,
+  MetricsIndexRoute: MetricsIndexRoute,
+  ServicesIndexRoute: ServicesIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+  TracesIndexRoute: TracesIndexRoute,
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()

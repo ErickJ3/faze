@@ -57,6 +57,8 @@ pub struct TraceInfo {
     pub span_count: usize,
     pub has_errors: bool,
     pub start_time: Option<i64>,
+    pub root_span_name: Option<String>,
+    pub root_span_kind: Option<glint::SpanKind>,
 }
 
 #[derive(Deserialize)]
@@ -67,6 +69,8 @@ pub struct ListParams {
 
 impl From<&glint::Trace> for TraceInfo {
     fn from(trace: &glint::Trace) -> Self {
+        let root_span = trace.root_span();
+
         Self {
             trace_id: trace.trace_id.clone(),
             service_name: trace.service_name.clone(),
@@ -76,6 +80,8 @@ impl From<&glint::Trace> for TraceInfo {
             start_time: trace
                 .start_time()
                 .map(|dt| dt.timestamp_nanos_opt().unwrap_or(0)),
+            root_span_name: root_span.map(|s| s.name.clone()),
+            root_span_kind: root_span.map(|s| s.kind),
         }
     }
 }
@@ -661,6 +667,11 @@ mod tests {
         assert_eq!(trace_info.span_count, 1);
         assert!(!trace_info.has_errors);
         assert_eq!(trace_info.duration_ms, 100.0);
+        assert_eq!(
+            trace_info.root_span_name,
+            Some("test operation".to_string())
+        );
+        assert_eq!(trace_info.root_span_kind, Some(SpanKind::Server));
     }
 
     #[tokio::test]
