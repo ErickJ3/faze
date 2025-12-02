@@ -1,18 +1,18 @@
 [workspace]
 resolver = "2"
 members = [
-    "glint",
-    "glint-collector",
-    "glint-server",
-    "glint-cli",
-    "glint-tui",
+    "faze",
+    "faze-collector",
+    "faze-server",
+    "faze-cli",
+    "faze-tui",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-repository = "https://github.com/ErickJ3/glint"
+repository = "https://github.com/ErickJ3/faze"
 rust-version = "1.91"
 
 [workspace.dependencies]
@@ -36,9 +36,9 @@ chrono = { version = "0.4", features = ["serde"] }
 rust-embed = "8"
 mime_guess = "2"
 anyhow = "1"
-glint = { path = "glint" }
-glint-collector = { path = "glint-collector" }
-glint-server = { path = "glint-server" }
+faze = { path = "faze" }
+faze-collector = { path = "faze-collector" }
+faze-server = { path = "faze-server" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

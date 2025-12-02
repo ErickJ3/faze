@@ -1,9 +1,0 @@
-[package]
-name = "glint-tui"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
-glint.workspace = true
-ratatui.workspace = true
-crossterm.workspace = true

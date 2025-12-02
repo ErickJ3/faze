@@ -39,7 +39,7 @@ jobs:
       - name: Upload ui artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: glint-ui-dist
+          name: faze-ui-dist
           path: ui/dist
           retention-days: 1
 
@@ -57,7 +57,7 @@ jobs:
       - name: Download UI artifacts
         uses: actions/download-artifact@v4
         with:
-          name: glint-ui-dist
+          name: faze-ui-dist
           path: ui/dist
 
       - name: Install Rust toolchain
@@ -99,7 +99,7 @@ jobs:
       - name: Download UI artifacts
         uses: actions/download-artifact@v4
         with:
-          name: glint-ui-dist
+          name: faze-ui-dist
           path: ui/dist
 
       - name: Install Rust toolchain
@@ -136,7 +136,7 @@ jobs:
       - name: Download UI artifacts
         uses: actions/download-artifact@v4
         with:
-          name: glint-ui-dist
+          name: faze-ui-dist
           path: ui/dist
 
       - name: Install Rust toolchain
@@ -165,5 +165,5 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: glint-ubuntu-latest
-          path: target/release/glint
+          name: faze-ubuntu-latest
+          path: target/release/faze

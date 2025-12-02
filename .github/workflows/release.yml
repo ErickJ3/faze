@@ -22,24 +22,24 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact_name: glint
-            asset_name: glint-linux-x86_64
+            artifact_name: faze
+            asset_name: faze-linux-x86_64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            artifact_name: glint
-            asset_name: glint-linux-x86_64-musl
+            artifact_name: faze
+            asset_name: faze-linux-x86_64-musl
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact_name: glint
-            asset_name: glint-macos-x86_64
+            artifact_name: faze
+            asset_name: faze-macos-x86_64
           - os: macos-latest
             target: aarch64-apple-darwin
-            artifact_name: glint
-            asset_name: glint-macos-aarch64
+            artifact_name: faze
+            asset_name: faze-macos-aarch64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: glint.exe
-            asset_name: glint-windows-x86_64.exe
+            artifact_name: faze.exe
+            asset_name: faze-windows-x86_64.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
         run: choco install protoc
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }} --bin glint --features bundled
+        run: cargo build --release --target ${{ matrix.target }} --bin faze --features bundled
 
       - name: Archive binary (Unix)
         if: matrix.os != 'windows-latest'
@@ -106,13 +106,13 @@ jobs:
           cargo install cargo-deb cargo-generate-rpm
 
       - name: Build .deb
-        run: cargo deb -p glint-cli --features bundled
+        run: cargo deb -p faze-cli --features bundled
 
       - name: Build binary for RPM
-        run: cargo build --release --bin glint --features bundled
+        run: cargo build --release --bin faze --features bundled
 
       - name: Build .rpm
-        run: cargo generate-rpm -p glint-cli
+        run: cargo generate-rpm -p faze-cli
 
       - name: Prepare artifacts
         run: |
@@ -164,10 +164,10 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          cargo publish -p glint --token $CARGO_REGISTRY_TOKEN
+          cargo publish -p faze --token $CARGO_REGISTRY_TOKEN
           sleep 15
-          cargo publish -p glint-collector --token $CARGO_REGISTRY_TOKEN
+          cargo publish -p faze-collector --token $CARGO_REGISTRY_TOKEN
           sleep 15
-          cargo publish -p glint-server --token $CARGO_REGISTRY_TOKEN
+          cargo publish -p faze-server --token $CARGO_REGISTRY_TOKEN
           sleep 15
-          cargo publish -p glint-cli --token $CARGO_REGISTRY_TOKEN
+          cargo publish -p faze-cli --token $CARGO_REGISTRY_TOKEN

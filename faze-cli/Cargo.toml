@@ -1,0 +1,46 @@
+[package]
+name = "faze-cli"
+version.workspace = true
+edition.workspace = true
+description = "Local-first observability for developers"
+license = "MIT"
+authors = ["Erick Jesus <erick.jesus2060@gmail.com>"]
+homepage = "https://github.com/ErickJ3/faze"
+repository = "https://github.com/ErickJ3/faze"
+keywords = ["observability", "tracing", "otlp", "telemetry", "monitoring"]
+categories = ["command-line-utilities", "development-tools"]
+
+[[bin]]
+name = "faze"
+path = "src/main.rs"
+
+[package.metadata.deb]
+maintainer = "Erick Jesus <erick.jesus2060@gmail.com>"
+copyright = "2025, Erick Jesus <erick.jesus2060@gmail.com>"
+license-file = ["../LICENSE", "0"]
+depends = "$auto"
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/faze", "usr/bin/", "755"],
+    ["../README.md", "usr/share/doc/faze/README", "644"],
+]
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/faze", dest = "/usr/bin/faze", mode = "755" },
+    { source = "../README.md", dest = "/usr/share/doc/faze/README", mode = "644" },
+]
+
+[dependencies]
+faze.workspace = true
+faze-collector.workspace = true
+faze-server.workspace = true
+tokio.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tonic.workspace = true
+axum.workspace = true
+anyhow.workspace = true
+colored.workspace = true

@@ -1,0 +1,9 @@
+[package]
+name = "faze-tui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+faze.workspace = true
+ratatui.workspace = true
+crossterm.workspace = true

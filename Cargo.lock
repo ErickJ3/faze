@@ -497,6 +497,79 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
+name = "faze"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "faze-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "clap",
+ "colored",
+ "faze",
+ "faze-collector",
+ "faze-server",
+ "tokio",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "faze-collector"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "faze",
+ "futures",
+ "prost",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+ "tower",
+ "tracing",
+]
+
+[[package]]
+name = "faze-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "faze",
+ "mime_guess",
+ "rust-embed",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+]
+
+[[package]]
+name = "faze-tui"
+version = "0.1.0"
+dependencies = [
+ "crossterm 0.29.0",
+ "faze",
+ "ratatui",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -638,79 +711,6 @@ dependencies = [
  "libc",
  "r-efi",
  "wasip2",
-]
-
-[[package]]
-name = "glint"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "rusqlite",
- "serde",
- "serde_json",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "glint-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "clap",
- "colored",
- "glint",
- "glint-collector",
- "glint-server",
- "tokio",
- "tonic",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "glint-collector"
-version = "0.1.0"
-dependencies = [
- "axum",
- "futures",
- "glint",
- "prost",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tonic",
- "tonic-prost",
- "tonic-prost-build",
- "tower",
- "tracing",
-]
-
-[[package]]
-name = "glint-server"
-version = "0.1.0"
-dependencies = [
- "axum",
- "glint",
- "mime_guess",
- "rust-embed",
- "serde",
- "serde_json",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
-]
-
-[[package]]
-name = "glint-tui"
-version = "0.1.0"
-dependencies = [
- "crossterm 0.29.0",
- "glint",
- "ratatui",
 ]
 
 [[package]]
