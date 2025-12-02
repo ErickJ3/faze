@@ -258,6 +258,24 @@ pub async fn health_check() -> impl IntoResponse {
     }))
 }
 
+/// GET /api/project - Get current project information
+pub async fn get_project_info() -> impl IntoResponse {
+    use glint::storage::detect_project_root;
+
+    let project_root = detect_project_root();
+    let project_name = project_root
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown");
+
+    let project_path = project_root.to_string_lossy().to_string();
+
+    Json(serde_json::json!({
+        "name": project_name,
+        "path": project_path,
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
