@@ -16,6 +16,35 @@ Faze is a lightweight OTLP collector with an embedded web interface. It provides
 
 ## Installation
 
+### Using Install Script
+
+**Linux/macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ErickJ3/faze/main/install.sh | sh
+```
+
+Or download and run manually:
+
+```bash
+wget https://raw.githubusercontent.com/ErickJ3/faze/main/install.sh
+chmod +x install.sh
+./install.sh
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/ErickJ3/faze/main/install.ps1 | iex
+```
+
+Or download and run manually:
+
+```powershell
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/ErickJ3/faze/main/install.ps1 -OutFile install.ps1
+.\install.ps1
+```
+
 ### From Source
 
 ```bash
