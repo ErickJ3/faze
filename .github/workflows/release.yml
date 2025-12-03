@@ -13,8 +13,44 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  build_ui:
+    name: Build UI Assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        id: bun-cache
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('ui/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        if: steps.bun-cache.outputs.cache-hit != 'true'
+        run: bun install
+        working-directory: ui
+
+      - name: Build UI
+        run: bun run build
+        working-directory: ui
+
+      - name: Upload ui artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: faze-ui-dist
+          path: ui/dist
+          retention-days: 1
+
   build-binaries:
     name: Build
+    needs: [build_ui]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -43,6 +79,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faze-ui-dist
+          path: ui/dist
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -93,9 +135,16 @@ jobs:
 
   build-packages:
     name: Build Linux Packages
+    needs: [build_ui]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faze-ui-dist
+          path: ui/dist
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -153,10 +202,17 @@ jobs:
 
   publish-crates-io:
     name: Publish to Crates.io
-    needs: [build-binaries]
+    needs: [build_ui, build-binaries]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faze-ui-dist
+          path: ui/dist
+
       - uses: dtolnay/rust-toolchain@stable
       - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler clang
 
