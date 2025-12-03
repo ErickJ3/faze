@@ -1,7 +1,4 @@
 consolidate-commits = true
-pre-release-replacements = [
-  { file = "../CHANGELOG.md", search = "## \\[unreleased\\]", replace = "## [unreleased]\n\n## [{{version}}] - {{date}}", exactly = 1 },
-]
 pre-release-hook = ["git", "cliff", "--tag", "{{tag_name}}", "-o", "../CHANGELOG.md"]
 push = false
 publish = false
