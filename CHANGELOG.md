@@ -13,6 +13,7 @@
 ### 💼 Other
 
 - Alter name to 'faze'
+- Update release build
 
 ### 🚜 Refactor
 
@@ -38,3 +39,9 @@
 - Update release
 - Update release
 - Update changelog
+- Release
+- Update ci workflow
+- Add build ui in release.yml
+- Add mold in build release
+- *(crates)* Update description and license in all crates
+- *(crates)* Fix problem with build .deb
