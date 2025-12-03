@@ -181,10 +181,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download all artifacts
+      - name: Download binary artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: faze-*
           path: artifacts
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-packages
+          path: artifacts/packages
 
       - name: List artifacts (debug)
         run: ls -R artifacts
@@ -199,31 +206,3 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  publish-crates-io:
-    name: Publish to Crates.io
-    needs: [build_ui, build-binaries]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download UI artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: faze-ui-dist
-          path: ui/dist
-
-      - uses: dtolnay/rust-toolchain@stable
-      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler clang mold
-
-      - name: Publish to crates.io
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: |
-          cargo publish -p faze --token $CARGO_REGISTRY_TOKEN
-          sleep 15
-          cargo publish -p faze-collector --token $CARGO_REGISTRY_TOKEN
-          sleep 15
-          cargo publish -p faze-server --token $CARGO_REGISTRY_TOKEN
-          sleep 15
-          cargo publish -p faze-cli --token $CARGO_REGISTRY_TOKEN
