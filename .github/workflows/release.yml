@@ -67,7 +67,7 @@ jobs:
         run: choco install protoc
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }} --bin faze --features bundled
+        run: cargo build --release --target ${{ matrix.target }} --bin faze
 
       - name: Archive binary (Unix)
         if: matrix.os != 'windows-latest'
@@ -106,10 +106,10 @@ jobs:
           cargo install cargo-deb cargo-generate-rpm
 
       - name: Build .deb
-        run: cargo deb -p faze-cli --features bundled
+        run: cargo deb -p faze-cli
 
       - name: Build binary for RPM
-        run: cargo build --release --bin faze --features bundled
+        run: cargo build --release --bin faze
 
       - name: Build .rpm
         run: cargo generate-rpm -p faze-cli
