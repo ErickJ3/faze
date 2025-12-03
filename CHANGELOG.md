@@ -37,3 +37,4 @@
 - Add initial changelog and release.toml
 - Update release
 - Update release
+- Update changelog
