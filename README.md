@@ -8,6 +8,8 @@ Faze is a lightweight OTLP collector with an embedded web interface. It provides
 
 ## A look
 
+![Faze Web Interface](screenshots/traces-screen-faze.png)
+
 - Single binary with no external dependencies
 - OTLP collector supporting both gRPC and HTTP protocols (partial)
 - Embedded web UI for data visualization
@@ -112,10 +114,18 @@ Just makes common tasks way more convenient than typing out full cargo commands 
 faze serve
 ```
 
+![Faze Server Running](screenshots/faze-serve-sample.png)
+
 This command:
 - Starts the OTLP collector (gRPC on port 4317, HTTP on port 4318)
 - Serves the web UI on http://localhost:7070
 - Automatically detects your project and stores data in `~/.local/share/faze/<project>.db`
+
+### Trace Details
+
+![Trace Timeline](screenshots/trace-timeline.png)
+
+The web UI provides detailed trace visualization with span timelines, showing middleware execution and request handling flow.
 
 ### Query Traces
 
