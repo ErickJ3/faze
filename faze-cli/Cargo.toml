@@ -17,7 +17,6 @@ path = "src/main.rs"
 [package.metadata.deb]
 maintainer = "Erick Jesus <erick.jesus2060@gmail.com>"
 copyright = "2025, Erick Jesus <erick.jesus2060@gmail.com>"
-license-file = ["../LICENSE", "0"]
 depends = "$auto"
 section = "utils"
 priority = "optional"
