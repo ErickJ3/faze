@@ -1,4 +1,4 @@
-# Glint UI
+# Faze UI
 
 ## Completed
 
@@ -119,7 +119,7 @@
 ### Backend Integration
 - [x] Verified backend API endpoints are working
 - [x] Backend returns root_span_name and root_span_kind in TraceInfo response
-- [x] Tested with real OTLP data from glint-collector
+- [x] Tested with real OTLP data from faze-collector
 - [x] All API endpoints match frontend expectations
 
 ### Features - Traces
