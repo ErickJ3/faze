@@ -95,7 +95,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y protobuf-compiler clang
+          sudo apt-get install -y protobuf-compiler clang mold
           if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-musl" ]]; then
             sudo apt-get install -y musl-tools
           fi
@@ -151,7 +151,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y protobuf-compiler clang
+          sudo apt-get install -y protobuf-compiler clang mold
           cargo install cargo-deb cargo-generate-rpm
 
       - name: Build .deb
@@ -214,7 +214,7 @@ jobs:
           path: ui/dist
 
       - uses: dtolnay/rust-toolchain@stable
-      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler clang
+      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler clang mold
 
       - name: Publish to crates.io
         env:
