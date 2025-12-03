@@ -1,95 +1,139 @@
-# Glint
+# Faze
 
-Local-first observability for developers.
+> Local-first observability for developers.
 
-Glint is a lightweight OTLP collector with a modern UI. No Docker, no complex setup — just one binary.
+"Faze" is pronounced like "phase" (/feɪz/)
 
-## Install
+Faze is a lightweight OTLP collector with an embedded web interface. It provides a simple way to collect, store, and visualize telemetry data without requiring Docker or complex infrastructure setup.
+
+## A look
+
+- Single binary with no external dependencies
+- OTLP collector supporting both gRPC and HTTP protocols (partial)
+- Embedded web UI for data visualization
+- Project-based database management
+- SQLite storage for traces, logs, and metrics
+
+## Installation
+
+### From Source
+
 ```bash
-# coming soon
-curl -fsSL https://glint.dev/install.sh | sh
+git clone https://github.com/ErickJ3/faze
+cd faze
+cargo build --release
 ```
+
+The binary will be available at `target/release/faze`.
+
+### Development Setup
+
+If you're planning to contribute or hack on Faze, we recommend using Nix and Just to make your life easier.
+
+**With Nix:**
+
+We have a flake that sets up everything you need (Rust, protobuf, dependencies, the works):
+
+```bash
+nix develop
+```
+
+That's it. You're ready to go.
+
+**Using Just:**
+
+We use [Just](https://github.com/casey/just) as a command runner. Think of it as `make` but less painful. Once you're in the dev environment:
+
+```bash
+# See all available commands
+just
+
+# Run the server with hot reload
+just dev-server
+
+# Run the UI dev server
+just dev-ui
+
+# Run both server and UI together
+just dev
+
+# Build the UI and create a release binary
+just build
+
+# Run tests (Rust + UI)
+just test
+
+# Run UI tests with interactive interface
+just test-ui
+
+# Run UI tests with coverage report
+just test-ui-coverage
+
+# Run linters (Rust + UI)
+just check
+```
+
+Just makes common tasks way more convenient than typing out full cargo commands every time.
 
 ## Usage
-```bash
-# start collector + UI
-# automatically detects your project and stores data in ~/.config/glint/<project>.db
-glint serve
 
-# open http://localhost:7070 for the bundled web UI
+### Start the Collector
+
+```bash
+faze serve
 ```
 
-Point your OTLP exporter to:
+This command:
+- Starts the OTLP collector (gRPC on port 4317, HTTP on port 4318)
+- Serves the web UI on http://localhost:7070
+- Automatically detects your project and stores data in `~/.local/share/faze/<project>.db`
+
+### Query Traces
+
+```bash
+faze traces
+```
+
+### Query Logs
+
+```bash
+faze logs
+```
+
+### DB Management
+
+```bash
+# Show database information
+faze info
+
+# Clean current project database
+faze clean
+
+# Clean all databases
+faze clean --all
+```
+
+## OTLP
+
+Configure your OTLP exporter to send telemetry to:
+> good to know: we haven't fully implemented the protocol yet, and some things are still pending in HTTP.
 - gRPC: `localhost:4317`
 - HTTP: `localhost:4318`
 
-```bash
-# query traces (from current project)
-glint traces
+## Storage
 
-# query logs
-glint logs
+Faze stores telemetry data in SQLite databases located at:
 
-# show database info
-glint info
+- Linux/macOS: `~/.local/share/faze/<project>.db`
+- Windows: `%LOCALAPPDATA%/faze/<project>.db`
 
-# clean current project database
-glint clean
+Each project gets its own database, automatically detected from the current working directory.
 
-# clean all databases
-glint clean --all
-```
+## Requirements
 
-## Development 
-see in [Development](./DEVELOPMENT.md)
-
-### Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/ErickJ3/glint
-cd glint
-
-# Start the collector
-# Database will be created at /home/<user>/.local/share/glint/<project-folder>.db
-cargo run -p glint-cli -- serve
-
-# In another terminal, send test traces
-cargo run -p glint-cli --example send_traces
-
-# Query traces
-cargo run -p glint-cli -- traces
-
-# Show database info
-cargo run -p glint-cli -- info
-
-# Clean database
-cargo run -p glint-cli -- clean
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-cargo test --workspace
-
-# Run specific package tests
-cargo test -p glint-collector
-cargo test -p glint-server
-```
-
-### Build
-
-```bash
-# Development build
-cargo build
-
-# Release build
-cargo build --release
-
-# The binary will be at target/release/glint
-```
+- Rust 1.91+ (for building from source)
+- Protobuf compiler (for building from source)
 
 ## License
 
-MIT
+MIT/Apache-2

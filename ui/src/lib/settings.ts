@@ -1,4 +1,4 @@
-const SETTINGS_KEY = "glint-settings";
+const SETTINGS_KEY = "faze-settings";
 
 export interface Settings {
   autoRefresh: boolean;

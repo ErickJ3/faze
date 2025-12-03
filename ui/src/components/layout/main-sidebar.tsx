@@ -10,7 +10,7 @@ export function MainSidebar() {
       "
     >
       <div className="h-14 flex items-center px-4 border-b border-sidebar-border">
-        <span className="font-mono tracking-tight text-sm">Glint</span>
+        <span className="font-mono tracking-tight text-sm">Faze</span>
       </div>
 
       <nav className="flex flex-col p-2 text-sm flex-1">

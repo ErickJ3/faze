@@ -1,11 +1,11 @@
 [alias]
 dev = "build"
-run-dev = "run -p glint-cli"
+run-dev = "run -p faze-cli"
 test-all = "test --workspace"
 test-fast = "test --workspace --lib"
 build-release = "build --release"
 build-all = "build --workspace --all-targets"
-run-release = "run --release -p glint-cli"
+run-release = "run --release -p faze-cli"
 check-all = "check --workspace --all-targets --all-features"
 fmt-all = "fmt --all"
 clippy-all = "clippy --workspace --all-targets --all-features -- -D warnings"

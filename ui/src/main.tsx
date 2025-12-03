@@ -6,7 +6,7 @@ import { NuqsAdapter } from "nuqs/adapters/react";
 import { router } from "./router";
 import { queryClient } from "./lib/query-client";
 import { ToastProvider } from "./components/shared/toast-provider";
-import { applyTheme, getTheme } from "./lib/theme";
+// import { applyTheme, getTheme } from "./lib/theme";
 import "./index.css";
 
 declare module "@tanstack/react-router" {
@@ -15,7 +15,7 @@ declare module "@tanstack/react-router" {
   }
 }
 
-applyTheme(getTheme());
+// applyTheme(getTheme());
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

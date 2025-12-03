@@ -1,4 +1,4 @@
-const THEME_KEY = "glint-theme";
+const THEME_KEY = "faze-theme";
 
 export type Theme = "light" | "dark";
 
