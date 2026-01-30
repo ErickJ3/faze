@@ -4,7 +4,7 @@
 
 ### Infrastructure & Setup
 - [x] TypeScript types for all API models (trace, log, metric, service, common)
-- [x] Axios API client configured with base URL (localhost:7070/api)
+- [x] Axios API client configured with dynamic base URL (window.location.origin/api)
 - [x] API services for all resources (traces, logs, metrics, services)
 - [x] React Query setup with QueryClient
 - [x] Custom hooks for data fetching (useTraces, useLogs, useMetrics, useServices)
