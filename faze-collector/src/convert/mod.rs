@@ -1,14 +1,20 @@
+//! Conversion helpers from OTLP protobuf types into Faze domain types.
+
 use crate::proto::opentelemetry::proto::{
     common::v1::{AnyValue, KeyValue, any_value},
     resource::v1::Resource,
 };
 use faze::models::{AttributeValue, Attributes, Resource as FazeResource};
 
+/// Log-record conversion helpers.
 pub mod logs;
+/// Metric conversion helpers.
 pub mod metrics;
+/// Trace/span conversion helpers.
 pub mod traces;
 
-/// Convert OTLP AnyValue to internal AttributeValue
+/// Convert OTLP `AnyValue` to internal `AttributeValue`
+#[must_use]
 pub fn convert_any_value(value: &AnyValue) -> Option<AttributeValue> {
     value.value.as_ref().and_then(|v| match v {
         any_value::Value::StringValue(s) => Some(AttributeValue::String(s.clone())),
@@ -25,7 +31,8 @@ pub fn convert_any_value(value: &AnyValue) -> Option<AttributeValue> {
     })
 }
 
-/// Convert OTLP AnyValue to a string
+/// Convert OTLP `AnyValue` to a string
+#[must_use]
 pub fn convert_any_value_to_string(value: &AnyValue) -> Option<String> {
     value.value.as_ref().map(|v| match v {
         any_value::Value::StringValue(s) => s.clone(),
@@ -45,7 +52,8 @@ pub fn convert_any_value_to_string(value: &AnyValue) -> Option<String> {
     })
 }
 
-/// Convert OTLP KeyValue list to Attributes
+/// Convert OTLP `KeyValue` list to `Attributes`
+#[must_use]
 pub fn convert_attributes(kvs: &[KeyValue]) -> Attributes {
     kvs.iter()
         .filter_map(|kv| {
@@ -57,15 +65,23 @@ pub fn convert_attributes(kvs: &[KeyValue]) -> Attributes {
         .collect()
 }
 
-/// Convert OTLP Resource to internal Resource
+/// Convert OTLP `Resource` to internal `Resource`
+#[must_use]
 pub fn convert_resource(resource: &Resource) -> FazeResource {
     let attributes = convert_attributes(&resource.attributes);
     FazeResource::new(attributes)
 }
 
-/// Convert bytes to hex string
+/// Convert bytes to hex string.
+#[must_use]
 pub fn bytes_to_hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{:02x}", b)).collect()
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for &b in bytes {
+        out.push(HEX[(b >> 4) as usize] as char);
+        out.push(HEX[(b & 0x0f) as usize] as char);
+    }
+    out
 }
 
 #[cfg(test)]
@@ -180,13 +196,12 @@ mod tests {
             )),
         };
         let result = convert_any_value(&value).unwrap();
-        if let AttributeValue::Array(arr) = result {
-            assert_eq!(arr.len(), 2);
-            assert_eq!(arr[0], AttributeValue::String("item1".to_string()));
-            assert_eq!(arr[1], AttributeValue::Int(42));
-        } else {
-            panic!("Expected array value");
-        }
+        let AttributeValue::Array(arr) = result else {
+            unreachable!("expected array value, got non-array variant");
+        };
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0], AttributeValue::String("item1".to_string()));
+        assert_eq!(arr[1], AttributeValue::Int(42));
     }
 
     #[test]
@@ -197,11 +212,10 @@ mod tests {
             )),
         };
         let result = convert_any_value(&value).unwrap();
-        if let AttributeValue::Array(arr) = result {
-            assert_eq!(arr.len(), 0);
-        } else {
-            panic!("Expected array value");
-        }
+        let AttributeValue::Array(arr) = result else {
+            unreachable!("expected array value, got non-array variant");
+        };
+        assert_eq!(arr.len(), 0);
     }
 
     #[test]

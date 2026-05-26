@@ -10,3 +10,6 @@ repository.workspace = true
 faze.workspace = true
 ratatui.workspace = true
 crossterm.workspace = true
+
+[lints]
+workspace = true

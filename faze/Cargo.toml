@@ -13,3 +13,6 @@ serde_json.workspace = true
 chrono.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+
+[lints]
+workspace = true

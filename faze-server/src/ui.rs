@@ -8,38 +8,42 @@ use mime_guess::MimeGuess;
 use rust_embed::RustEmbed;
 use std::borrow::Cow;
 
+const FALLBACK_MIME: HeaderValue = HeaderValue::from_static("application/octet-stream");
+
 #[derive(RustEmbed)]
 #[folder = "../ui/dist"]
 struct UiAssets;
 
+/// Build the Axum fallback service that serves the embedded UI bundle.
 pub fn fallback_service() -> MethodRouter {
     get(serve_embedded_asset)
 }
 
 async fn serve_embedded_asset(uri: Uri) -> impl IntoResponse {
-    match resolve_response(uri.path(), true) {
-        Some(response) => response,
-        None => Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(Body::from("Not Found"))
-            .unwrap(),
-    }
+    resolve_response(uri.path(), true).unwrap_or_else(|| {
+        let mut response = Response::new(Body::from("Not Found"));
+        *response.status_mut() = StatusCode::NOT_FOUND;
+        response
+    })
 }
 
 fn resolve_response(path: &str, include_body: bool) -> Option<Response<Body>> {
     resolve_asset(path).map(|(asset_path, content)| {
         let mime = guess_mime(&asset_path).first_or_octet_stream();
+        let mime_header = HeaderValue::from_str(mime.as_ref()).unwrap_or(FALLBACK_MIME);
 
-        let builder = Response::builder().status(StatusCode::OK).header(
-            header::CONTENT_TYPE,
-            HeaderValue::from_str(mime.as_ref()).unwrap(),
-        );
-
-        if include_body {
-            builder.body(Body::from(content.into_owned())).unwrap()
+        let body = if include_body {
+            Body::from(content.into_owned())
         } else {
-            builder.body(Body::empty()).unwrap()
-        }
+            Body::empty()
+        };
+
+        let mut response = Response::new(body);
+        *response.status_mut() = StatusCode::OK;
+        response
+            .headers_mut()
+            .insert(header::CONTENT_TYPE, mime_header);
+        response
     })
 }
 

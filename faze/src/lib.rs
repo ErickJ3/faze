@@ -1,7 +1,12 @@
+//! Faze core: domain models and SQLite-backed storage for spans, logs, and metrics.
+//!
+//! This crate is the substrate shared by the collector, server, CLI, and TUI.
+//! It owns the on-disk schema and the typed APIs for inserting and querying
+//! observability data.
+
 pub mod models;
 pub mod storage;
 
-// Re-exports
 pub use models::{
     AttributeValue, Attributes, Log, Metric, MetricDataPoint, MetricType, Resource, SeverityLevel,
     Span, SpanKind, Status, StatusCode, Trace,

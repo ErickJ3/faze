@@ -12,6 +12,7 @@ use tracing::{error, info};
 /// Shared application state
 #[derive(Clone)]
 pub struct AppState {
+    /// Shared storage handle used by all route handlers.
     pub storage: Arc<Storage>,
 }
 
@@ -44,23 +45,34 @@ pub struct ListLogsQuery {
 /// Response for trace list
 #[derive(Debug, Serialize)]
 pub struct TraceListResponse {
+    /// Trace summaries returned by the query.
     pub traces: Vec<TraceInfo>,
+    /// Total count of traces in the response.
     pub total: usize,
 }
 
 /// Trace information for list view
 #[derive(Debug, Serialize)]
 pub struct TraceInfo {
+    /// Trace identifier.
     pub trace_id: String,
+    /// Service name associated with the root span, if known.
     pub service_name: Option<String>,
+    /// Total trace duration in milliseconds.
     pub duration_ms: f64,
+    /// Number of spans in the trace.
     pub span_count: usize,
+    /// True when at least one span has error status.
     pub has_errors: bool,
+    /// Trace start time as nanoseconds since the Unix epoch.
     pub start_time: Option<i64>,
+    /// Operation name of the root span, if any.
     pub root_span_name: Option<String>,
+    /// Kind of the root span, if any.
     pub root_span_kind: Option<faze::SpanKind>,
 }
 
+/// Query parameters for generic listing endpoints.
 #[derive(Deserialize)]
 pub struct ListParams {
     service: Option<String>,
@@ -77,9 +89,7 @@ impl From<&faze::Trace> for TraceInfo {
             duration_ms: trace.duration_ms(),
             span_count: trace.span_count(),
             has_errors: trace.has_errors(),
-            start_time: trace
-                .start_time()
-                .map(|dt| dt.timestamp_nanos_opt().unwrap_or(0)),
+            start_time: trace.start_time().and_then(|dt| dt.timestamp_nanos_opt()),
             root_span_name: root_span.map(|s| s.name.clone()),
             root_span_kind: root_span.map(|s| s.kind),
         }
@@ -139,7 +149,7 @@ pub async fn list_traces(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
-                    "error": format!("Failed to list traces: {}", e)
+                    "error": format!("Failed to list traces: {e}")
                 })),
             )
                 .into_response()
@@ -159,7 +169,7 @@ pub async fn get_trace(
         Err(faze::StorageError::NotFound(_)) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({
-                "error": format!("Trace not found: {}", trace_id)
+                "error": format!("Trace not found: {trace_id}")
             })),
         )
             .into_response(),
@@ -168,7 +178,7 @@ pub async fn get_trace(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
-                    "error": format!("Failed to get trace: {}", e)
+                    "error": format!("Failed to get trace: {e}")
                 })),
             )
                 .into_response()
@@ -195,7 +205,7 @@ pub async fn list_logs(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
-                    "error": format!("Failed to list logs: {}", e)
+                    "error": format!("Failed to list logs: {e}")
                 })),
             )
                 .into_response()
@@ -209,10 +219,8 @@ pub async fn list_services(State(state): State<AppState>) -> impl IntoResponse {
 
     match state.storage.list_traces(None, Some(1000)) {
         Ok(traces) => {
-            let mut services: Vec<String> = traces
-                .iter()
-                .filter_map(|t| t.service_name.clone())
-                .collect();
+            let mut services: Vec<String> =
+                traces.into_iter().filter_map(|t| t.service_name).collect();
 
             services.sort();
             services.dedup();
@@ -227,7 +235,7 @@ pub async fn list_services(State(state): State<AppState>) -> impl IntoResponse {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
-                    "error": format!("Failed to list services: {}", e)
+                    "error": format!("Failed to list services: {e}")
                 })),
             )
                 .into_response()
@@ -268,7 +276,7 @@ pub async fn get_project_info() -> impl IntoResponse {
         .and_then(|n| n.to_str())
         .unwrap_or("unknown");
 
-    let project_path = project_root.to_string_lossy().to_string();
+    let project_path = project_root.to_string_lossy().into_owned();
 
     Json(serde_json::json!({
         "name": project_name,
@@ -277,6 +285,7 @@ pub async fn get_project_info() -> impl IntoResponse {
 }
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use faze::models::{Attributes, Span, SpanKind, Status};
@@ -355,13 +364,13 @@ mod tests {
         let storage = Storage::new_in_memory().unwrap();
         for i in 0..5 {
             let span = Span::new(
-                format!("span{}", i),
-                format!("trace{}", i),
+                format!("span{i}"),
+                format!("trace{i}"),
                 None,
-                format!("operation{}", i),
+                format!("operation{i}"),
                 SpanKind::Server,
                 1_000_000_000,
-                1_000_000_000 + (i as i64 * 100_000_000), // Different durations
+                1_000_000_000 + (i64::from(i) * 100_000_000), // Different durations
                 Attributes::new(),
                 Status::ok(),
                 Some("test-service".to_string()),
@@ -442,13 +451,13 @@ mod tests {
         let storage = Storage::new_in_memory().unwrap();
         for i in 0..20 {
             let span = Span::new(
-                format!("span{}", i),
-                format!("trace{}", i),
+                format!("span{i}"),
+                format!("trace{i}"),
                 None,
-                format!("operation{}", i),
+                format!("operation{i}"),
                 SpanKind::Server,
-                1_000_000_000 + (i as i64 * 1000),
-                2_000_000_000 + (i as i64 * 1000),
+                1_000_000_000 + (i64::from(i) * 1000),
+                2_000_000_000 + (i64::from(i) * 1000),
                 Attributes::new(),
                 Status::ok(),
                 Some("test-service".to_string()),
@@ -495,10 +504,10 @@ mod tests {
         let services = ["service-a", "service-b", "service-c", "service-a"];
         for (i, service) in services.iter().enumerate() {
             let span = Span::new(
-                format!("span{}", i),
-                format!("trace{}", i),
+                format!("span{i}"),
+                format!("trace{i}"),
                 None,
-                format!("operation{}", i),
+                format!("operation{i}"),
                 SpanKind::Server,
                 1_000_000_000,
                 2_000_000_000,

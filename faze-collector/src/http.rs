@@ -354,8 +354,7 @@ mod tests {
                                 key: "service.name".to_string(),
                                 value: Some(AnyValue {
                                     value: Some(any_value::Value::StringValue(format!(
-                                        "service-{}",
-                                        i
+                                        "service-{i}"
                                     ))),
                                 }),
                             }],
@@ -365,12 +364,27 @@ mod tests {
                             scope: None,
                             spans: vec![OtlpSpan {
                                 trace_id: vec![
-                                    i as u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                                    u8::try_from(i).unwrap_or(0),
+                                    2,
+                                    3,
+                                    4,
+                                    5,
+                                    6,
+                                    7,
+                                    8,
+                                    9,
+                                    10,
+                                    11,
+                                    12,
+                                    13,
+                                    14,
+                                    15,
+                                    16,
                                 ],
-                                span_id: vec![i as u8, 2, 3, 4, 5, 6, 7, 8],
+                                span_id: vec![u8::try_from(i).unwrap_or(0), 2, 3, 4, 5, 6, 7, 8],
                                 trace_state: String::new(),
                                 parent_span_id: vec![],
-                                name: format!("span-{}", i),
+                                name: format!("span-{i}"),
                                 kind: OtlpSpanKind::Server as i32,
                                 start_time_unix_nano: 1_000_000_000_000_000_000,
                                 end_time_unix_nano: 1_000_000_000_100_000_000,
@@ -419,16 +433,16 @@ mod tests {
         let storage = Arc::new(Storage::new_in_memory().unwrap());
         let app = create_router(storage.clone());
         let mut spans = vec![];
-        for i in 0..100 {
+        for i in 0..100u8 {
             spans.push(OtlpSpan {
                 trace_id: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-                span_id: vec![i as u8, i as u8, i as u8, i as u8, 5, 6, 7, 8],
+                span_id: vec![i, i, i, i, 5, 6, 7, 8],
                 trace_state: String::new(),
                 parent_span_id: vec![],
-                name: format!("large-span-{}", i),
+                name: format!("large-span-{i}"),
                 kind: OtlpSpanKind::Internal as i32,
-                start_time_unix_nano: 1_000_000_000_000_000_000 + i as u64,
-                end_time_unix_nano: 1_000_000_000_100_000_000 + i as u64,
+                start_time_unix_nano: 1_000_000_000_000_000_000 + u64::from(i),
+                end_time_unix_nano: 1_000_000_000_100_000_000 + u64::from(i),
                 attributes: vec![],
                 dropped_attributes_count: 0,
                 events: vec![],

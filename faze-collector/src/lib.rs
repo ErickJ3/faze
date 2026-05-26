@@ -1,7 +1,20 @@
+//! OTLP collector: HTTP and gRPC entry points plus conversion to Faze domain types.
+
+/// OTLP-to-Faze conversion helpers.
 pub mod convert;
+/// gRPC service implementations.
 pub mod grpc;
+/// HTTP route handlers.
 pub mod http;
 
+/// Generated OTLP protobuf bindings (see `build.rs`).
+#[allow(
+    missing_docs,
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::cargo
+)]
 pub mod proto {
     pub mod opentelemetry {
         pub mod proto {

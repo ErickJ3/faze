@@ -6,10 +6,27 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum MetricType {
+    /// Single point in time numeric value.
     Gauge,
+    /// Monotonic or non-monotonic cumulative/delta sum.
     Sum,
+    /// Bucketed distribution of values.
     Histogram,
+    /// Summary statistics (quantiles).
     Summary,
+}
+
+impl MetricType {
+    /// Stable string used for database persistence. Round-trips with `parse_metric_type`.
+    #[must_use]
+    pub const fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Gauge => "Gauge",
+            Self::Sum => "Sum",
+            Self::Histogram => "Histogram",
+            Self::Summary => "Summary",
+        }
+    }
 }
 
 /// Aggregation temporality for Sum and Histogram metrics
@@ -17,10 +34,25 @@ pub enum MetricType {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[derive(Default)]
 pub enum AggregationTemporality {
+    /// Temporality is not specified.
     #[default]
     Unspecified,
+    /// Data point reports the change since the last reset.
     Delta,
+    /// Data point reports the value accumulated since process start.
     Cumulative,
+}
+
+impl AggregationTemporality {
+    /// Stable string used for database persistence. Round-trips with `parse_temporality`.
+    #[must_use]
+    pub const fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Unspecified => "Unspecified",
+            Self::Delta => "Delta",
+            Self::Cumulative => "Cumulative",
+        }
+    }
 }
 
 /// Represents a metric data point
@@ -37,7 +69,9 @@ pub struct MetricDataPoint {
 }
 
 impl MetricDataPoint {
-    pub fn new(
+    /// Build a single data point.
+    #[must_use]
+    pub const fn new(
         time_unix_nano: i64,
         start_time_unix_nano: Option<i64>,
         value: f64,
@@ -51,12 +85,14 @@ impl MetricDataPoint {
         }
     }
 
-    /// Get timestamp as DateTime
-    pub fn timestamp(&self) -> DateTime<Utc> {
+    /// Get timestamp as `DateTime`
+    #[must_use]
+    pub const fn timestamp(&self) -> DateTime<Utc> {
         DateTime::from_timestamp_nanos(self.time_unix_nano)
     }
 
-    /// Get start time as DateTime (if available)
+    /// Get start time as `DateTime` (if available)
+    #[must_use]
     pub fn start_time(&self) -> Option<DateTime<Utc>> {
         self.start_time_unix_nano
             .map(DateTime::from_timestamp_nanos)
@@ -83,8 +119,10 @@ pub struct Metric {
 }
 
 impl Metric {
+    /// Build a metric from its component fields.
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    #[must_use]
+    pub const fn new(
         name: String,
         description: Option<String>,
         unit: Option<String>,
@@ -105,7 +143,8 @@ impl Metric {
     }
 
     /// Create a gauge metric
-    pub fn gauge(
+    #[must_use]
+    pub const fn gauge(
         name: String,
         data_points: Vec<MetricDataPoint>,
         service_name: Option<String>,
@@ -122,7 +161,8 @@ impl Metric {
     }
 
     /// Create a counter (cumulative sum) metric
-    pub fn counter(
+    #[must_use]
+    pub const fn counter(
         name: String,
         data_points: Vec<MetricDataPoint>,
         service_name: Option<String>,
@@ -139,17 +179,20 @@ impl Metric {
     }
 
     /// Get the latest value (if any data points exist)
+    #[must_use]
     pub fn latest_value(&self) -> Option<f64> {
         self.data_points.last().map(|dp| dp.value)
     }
 
     /// Get the number of data points
-    pub fn data_point_count(&self) -> usize {
+    #[must_use]
+    pub const fn data_point_count(&self) -> usize {
         self.data_points.len()
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 
@@ -179,7 +222,7 @@ mod tests {
             Some("ms".to_string()),
             MetricType::Histogram,
             AggregationTemporality::Delta,
-            data_points.clone(),
+            data_points,
             Some("api-service".to_string()),
         );
 

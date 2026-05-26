@@ -1,4 +1,8 @@
-pub fn add(left: u64, right: u64) -> u64 {
+//! Terminal UI for Faze (placeholder).
+
+/// Sum two unsigned 64-bit integers.
+#[must_use]
+pub const fn add(left: u64, right: u64) -> u64 {
     left + right
 }
 

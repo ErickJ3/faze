@@ -16,12 +16,16 @@ pub struct OtlpMetricsCollector {
 }
 
 impl OtlpMetricsCollector {
+    /// Build a collector backed by the given storage handle.
+    #[must_use]
     pub fn new(storage: Storage) -> Self {
         Self {
             storage: Arc::new(storage),
         }
     }
 
+    /// Wrap the collector into a tonic `MetricsServiceServer`.
+    #[must_use]
     pub fn into_service(self) -> MetricsServiceServer<Self> {
         MetricsServiceServer::new(self)
     }
@@ -41,7 +45,7 @@ impl MetricsService for OtlpMetricsCollector {
         let mut error_messages = Vec::new();
 
         for metric in metrics {
-            let points_count = metric.data_points.len() as i64;
+            let points_count = i64::try_from(metric.data_points.len()).unwrap_or(i64::MAX);
 
             if let Err(e) = self.storage.insert_metric(&metric) {
                 error!("Failed to insert metric: {}", e);
@@ -49,7 +53,7 @@ impl MetricsService for OtlpMetricsCollector {
                 rejected_data_points += points_count;
 
                 if error_messages.len() < 5 {
-                    error_messages.push(format!("Error inserting metric: {}", e));
+                    error_messages.push(format!("Error inserting metric: {e}"));
                 }
             }
         }

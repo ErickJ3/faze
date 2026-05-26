@@ -6,7 +6,9 @@ use crate::proto::opentelemetry::proto::logs::v1::{
 };
 use faze::models::log::{Log as FazeLog, SeverityLevel};
 
-// Convert OTLP SeverityNumber to internal SeverityLevel
+/// Convert OTLP `SeverityNumber` to internal `SeverityLevel`.
+#[must_use]
+#[allow(clippy::match_same_arms)]
 pub fn convert_log_severity_level(kind: i32) -> SeverityLevel {
     match OtlSeveryNumber::try_from(kind) {
         Ok(OtlSeveryNumber::Unspecified) => SeverityLevel::Unspecified,
@@ -38,7 +40,7 @@ pub fn convert_log_severity_level(kind: i32) -> SeverityLevel {
     }
 }
 
-// Convert OTLP LogRecord to internal Log
+#[allow(clippy::cast_possible_wrap)]
 fn convert_log(log: &LogRecord, service_name: Option<String>) -> FazeLog {
     let trace_id = Some(bytes_to_hex(&log.trace_id));
     let span_id = Some(bytes_to_hex(&log.span_id));
@@ -66,7 +68,8 @@ fn convert_log(log: &LogRecord, service_name: Option<String>) -> FazeLog {
     )
 }
 
-/// Convert OTLP LogRecord to internal Log
+/// Convert OTLP `LogRecord` collections to internal `Log`s.
+#[must_use]
 pub fn convert_resource_logs(resource_logs: &[ResourceLogs]) -> Vec<FazeLog> {
     let mut logs = Vec::new();
 
@@ -75,7 +78,7 @@ pub fn convert_resource_logs(resource_logs: &[ResourceLogs]) -> Vec<FazeLog> {
             .resource
             .as_ref()
             .map(convert_resource)
-            .and_then(|r| r.service_name().map(|s| s.to_string()));
+            .and_then(|r| r.service_name().map(str::to_string));
 
         for scope_logs in &rs.scope_logs {
             for span in &scope_logs.log_records {

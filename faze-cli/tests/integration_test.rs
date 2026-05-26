@@ -1,3 +1,11 @@
+#![allow(
+    missing_docs,
+    clippy::float_cmp,
+    clippy::uninlined_format_args,
+    clippy::similar_names,
+    clippy::doc_markdown
+)]
+
 use faze::Storage;
 use faze_collector::proto::opentelemetry::proto::collector::trace::v1::ExportTraceServiceRequest;
 use faze_collector::proto::opentelemetry::proto::collector::trace::v1::trace_service_client::TraceServiceClient;
@@ -55,7 +63,7 @@ fn create_test_otlp_span(
 
 /// Test that we can send a trace via gRPC and it gets stored in DuckDB
 #[tokio::test]
-#[ignore] // Run with: cargo test --test integration_test -- --ignored
+#[ignore = "requires running collector; run with cargo test -- --ignored"]
 async fn test_send_trace_via_grpc() {
     // Note: This test requires a running faze server
     // Start server first: cargo run -p faze-cli -- serve --db-path /tmp/test-integration.db

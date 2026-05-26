@@ -1,8 +1,9 @@
-use colored::*;
+use colored::Colorize;
 use faze::{Storage, detect_project_root, get_project_db_path};
 use faze_collector::grpc::{logs, metrics, traces};
 use std::path::PathBuf;
 
+#[allow(clippy::too_many_lines)]
 pub async fn run(
     port: u16,
     grpc_port: u16,
@@ -40,7 +41,7 @@ pub async fn run(
     let metrics_collector = metrics::OtlpMetricsCollector::new(storage.clone());
     let metrics_grpc_service = metrics_collector.into_service();
 
-    let grpc_addr = format!("0.0.0.0:{}", grpc_port).parse()?;
+    let grpc_addr = format!("0.0.0.0:{grpc_port}").parse()?;
     let grpc_server = tonic::transport::Server::builder()
         .add_service(spans_grpc_service)
         .add_service(logs_grpc_service)
@@ -65,22 +66,19 @@ pub async fn run(
     });
 
     println!("\n{}", "Listeners".yellow().bold());
-    println!("  OTLP gRPC  {}", format!("0.0.0.0:{}", grpc_port).cyan());
+    println!("  OTLP gRPC  {}", format!("0.0.0.0:{grpc_port}").cyan());
     println!("  OTLP HTTP  {}", "0.0.0.0:4318".cyan());
-    println!("  API Server {}", format!("0.0.0.0:{}", port).cyan());
+    println!("  API Server {}", format!("0.0.0.0:{port}").cyan());
 
     println!("\n{}", "Ready".green().bold());
-    println!(
-        "  Web UI    {}",
-        format!("http://localhost:{}", port).cyan()
-    );
+    println!("  Web UI    {}", format!("http://localhost:{port}").cyan());
     println!(
         "  API       {}",
-        format!("http://localhost:{}/api", port).dimmed()
+        format!("http://localhost:{port}/api").dimmed()
     );
     println!(
         "  Health    {}",
-        format!("http://localhost:{}/health", port).dimmed()
+        format!("http://localhost:{port}/health").dimmed()
     );
 
     tokio::select! {

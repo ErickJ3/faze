@@ -1,3 +1,5 @@
+//! SQLite-backed storage layer for spans, logs, and metrics.
+
 mod convert;
 mod db_path;
 mod schema;
@@ -7,7 +9,7 @@ use crate::models::{
 };
 use rusqlite::{Connection, Result as SqliteResult, params};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use thiserror::Error;
 
 use convert::{
@@ -18,21 +20,31 @@ pub use db_path::{
 };
 use schema::init_schema;
 
+/// Errors returned by [`Storage`] operations.
 #[derive(Debug, Error)]
 pub enum StorageError {
+    /// Underlying `SQLite` failure.
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
+    /// JSON (de)serialization failure for attributes or status.
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
+    /// Requested entity does not exist.
     #[error("Not found: {0}")]
     NotFound(String),
 
+    /// Caller supplied invalid input or environment state.
     #[error("Invalid input: {0}")]
     InvalidInput(String),
+
+    /// The shared connection mutex was poisoned by a panic in another thread.
+    #[error("Storage lock poisoned")]
+    LockPoisoned,
 }
 
+/// Specialised `Result` for [`Storage`] operations.
 pub type Result<T> = std::result::Result<T, StorageError>;
 
 /// Main storage interface for Faze
@@ -53,11 +65,11 @@ impl Storage {
     ///
     /// This will:
     /// 1. Detect the current project by looking for markers (.git, Cargo.toml, package.json, etc.)
-    /// 2. Create a database in ~/.local/share/faze/<project_name>.db
+    /// 2. Create a database in `~/.local/share/faze/<project_name>.db`
     /// 3. Multiple terminals in the same project will share the same database
     pub fn new() -> Result<Self> {
         let db_path = get_project_db_path().map_err(|e| {
-            StorageError::InvalidInput(format!("Failed to determine database path: {}", e))
+            StorageError::InvalidInput(format!("Failed to determine database path: {e}"))
         })?;
 
         Self::new_with_path(&db_path)
@@ -84,7 +96,7 @@ impl Storage {
             && !parent.exists()
         {
             std::fs::create_dir_all(parent).map_err(|e| {
-                StorageError::InvalidInput(format!("Failed to create directory: {}", e))
+                StorageError::InvalidInput(format!("Failed to create directory: {e}"))
             })?;
         }
 
@@ -101,112 +113,130 @@ impl Storage {
         std::fs::remove_file(path)
     }
 
-    /// Insert a span
-    pub fn insert_span(&self, span: &Span) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
-        let attributes_json = to_json(&span.attributes)?;
-        let status_json = to_json(&span.status)?;
-
-        conn.execute(
-            "INSERT INTO spans (
-                span_id, trace_id, parent_span_id, name, kind,
-                start_time_unix_nano, end_time_unix_nano,
-                attributes, status, service_name
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-            params![
-                &span.span_id,
-                &span.trace_id,
-                &span.parent_span_id,
-                &span.name,
-                format!("{:?}", span.kind),
-                span.start_time_unix_nano,
-                span.end_time_unix_nano,
-                attributes_json,
-                status_json,
-                &span.service_name,
-            ],
-        )?;
-
-        Ok(())
+    fn lock(&self) -> Result<MutexGuard<'_, Connection>> {
+        self.conn.lock().map_err(|_| StorageError::LockPoisoned)
     }
 
-    /// Insert multiple spans
+    /// Insert a span
+    pub fn insert_span(&self, span: &Span) -> Result<()> {
+        self.insert_spans(std::slice::from_ref(span))
+    }
+
+    /// Insert multiple spans atomically under a single transaction.
+    #[allow(clippy::significant_drop_tightening)]
     pub fn insert_spans(&self, spans: &[Span]) -> Result<()> {
-        for span in spans {
-            self.insert_span(span)?;
+        if spans.is_empty() {
+            return Ok(());
         }
+        let mut conn = self.lock()?;
+        let tx = conn.transaction()?;
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO spans (
+                    span_id, trace_id, parent_span_id, name, kind,
+                    start_time_unix_nano, end_time_unix_nano,
+                    attributes, status, service_name
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            )?;
+            for span in spans {
+                let attributes_json = to_json(&span.attributes)?;
+                let status_json = to_json(&span.status)?;
+                stmt.execute(params![
+                    &span.span_id,
+                    &span.trace_id,
+                    &span.parent_span_id,
+                    &span.name,
+                    span.kind.as_db_str(),
+                    span.start_time_unix_nano,
+                    span.end_time_unix_nano,
+                    attributes_json,
+                    status_json,
+                    &span.service_name,
+                ])?;
+            }
+        }
+        tx.commit()?;
         Ok(())
     }
 
     /// Insert a log
     pub fn insert_log(&self, log: &Log) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
-        let attributes_json = to_json(&log.attributes)?;
-
-        conn.execute(
-            "INSERT INTO logs (
-                time_unix_nano, severity_level, severity_text, body,
-                attributes, trace_id, span_id, service_name
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![
-                log.time_unix_nano,
-                format!("{:?}", log.severity_level),
-                &log.severity_text,
-                &log.body,
-                attributes_json,
-                &log.trace_id,
-                &log.span_id,
-                &log.service_name,
-            ],
-        )?;
-
-        Ok(())
+        self.insert_logs(std::slice::from_ref(log))
     }
 
-    /// Insert multiple logs
+    /// Insert multiple logs atomically under a single transaction.
+    #[allow(clippy::significant_drop_tightening)]
     pub fn insert_logs(&self, logs: &[Log]) -> Result<()> {
-        for log in logs {
-            self.insert_log(log)?;
+        if logs.is_empty() {
+            return Ok(());
         }
+        let mut conn = self.lock()?;
+        let tx = conn.transaction()?;
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO logs (
+                    time_unix_nano, severity_level, severity_text, body,
+                    attributes, trace_id, span_id, service_name
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            )?;
+            for log in logs {
+                let attributes_json = to_json(&log.attributes)?;
+                stmt.execute(params![
+                    log.time_unix_nano,
+                    log.severity_level.as_db_str(),
+                    &log.severity_text,
+                    &log.body,
+                    attributes_json,
+                    &log.trace_id,
+                    &log.span_id,
+                    &log.service_name,
+                ])?;
+            }
+        }
+        tx.commit()?;
         Ok(())
     }
 
     /// Insert a metric
     pub fn insert_metric(&self, metric: &Metric) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        self.insert_metrics(std::slice::from_ref(metric))
+    }
 
-        for data_point in &metric.data_points {
-            let attributes_json = to_json(&data_point.attributes)?;
-
-            conn.execute(
+    /// Insert multiple metrics atomically under a single transaction.
+    #[allow(clippy::significant_drop_tightening)]
+    pub fn insert_metrics(&self, metrics: &[Metric]) -> Result<()> {
+        if metrics.is_empty() {
+            return Ok(());
+        }
+        let mut conn = self.lock()?;
+        let tx = conn.transaction()?;
+        {
+            let mut stmt = tx.prepare(
                 "INSERT INTO metrics (
                     name, description, unit, metric_type, temporality,
                     time_unix_nano, start_time_unix_nano, value,
                     attributes, service_name
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-                params![
-                    &metric.name,
-                    &metric.description,
-                    &metric.unit,
-                    format!("{:?}", metric.metric_type),
-                    format!("{:?}", metric.temporality),
-                    data_point.time_unix_nano,
-                    data_point.start_time_unix_nano,
-                    data_point.value,
-                    attributes_json,
-                    &metric.service_name,
-                ],
             )?;
+            for metric in metrics {
+                for data_point in &metric.data_points {
+                    let attributes_json = to_json(&data_point.attributes)?;
+                    stmt.execute(params![
+                        &metric.name,
+                        &metric.description,
+                        &metric.unit,
+                        metric.metric_type.as_db_str(),
+                        metric.temporality.as_db_str(),
+                        data_point.time_unix_nano,
+                        data_point.start_time_unix_nano,
+                        data_point.value,
+                        attributes_json,
+                        &metric.service_name,
+                    ])?;
+                }
+            }
         }
-
-        Ok(())
-    }
-
-    /// Insert multiple metrics
-    pub fn insert_metrics(&self, metrics: &[Metric]) -> Result<()> {
-        for metric in metrics {
-            self.insert_metric(metric)?;
-        }
+        tx.commit()?;
         Ok(())
     }
 
@@ -216,8 +246,7 @@ impl Storage {
 
         if spans.is_empty() {
             return Err(StorageError::NotFound(format!(
-                "Trace not found: {}",
-                trace_id
+                "Trace not found: {trace_id}"
             )));
         }
 
@@ -225,8 +254,9 @@ impl Storage {
     }
 
     /// Get all spans for a trace
+    #[allow(clippy::significant_drop_tightening)]
     fn get_spans_by_trace_id(&self, trace_id: &str) -> Result<Vec<Span>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.lock()?;
         let mut stmt = conn.prepare(
             "SELECT span_id, trace_id, parent_span_id, name, kind,
                     start_time_unix_nano, end_time_unix_nano,
@@ -244,12 +274,18 @@ impl Storage {
     }
 
     /// List traces with optional filters
+    #[allow(
+        clippy::significant_drop_tightening,
+        clippy::option_if_let_else,
+        clippy::cast_possible_wrap,
+        clippy::redundant_closure_for_method_calls
+    )]
     pub fn list_traces(
         &self,
         service_name: Option<&str>,
         limit: Option<usize>,
     ) -> Result<Vec<Trace>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.lock()?;
 
         let (query, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) = if let Some(service) =
             service_name
@@ -287,8 +323,14 @@ impl Storage {
     }
 
     /// List logs with optional filters
+    #[allow(
+        clippy::significant_drop_tightening,
+        clippy::option_if_let_else,
+        clippy::cast_possible_wrap,
+        clippy::redundant_closure_for_method_calls
+    )]
     pub fn list_logs(&self, service_name: Option<&str>, limit: Option<usize>) -> Result<Vec<Log>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.lock()?;
 
         let (query, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) =
             if let Some(service) = service_name {
@@ -351,15 +393,19 @@ impl Storage {
         Ok(logs)
     }
 
+    /// List metrics with optional service-name filter and result cap.
+    #[allow(
+        clippy::significant_drop_tightening,
+        clippy::option_if_let_else,
+        clippy::cast_possible_wrap,
+        clippy::redundant_closure_for_method_calls
+    )]
     pub fn list_metrics(
         &self,
         service_name: Option<&str>,
         limit: Option<usize>,
     ) -> Result<Vec<Metric>> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|e| StorageError::InvalidInput(format!("Mutex poisoned: {}", e)))?;
+        let conn = self.lock()?;
         let limit_value = limit.unwrap_or(100) as i64;
 
         let (query, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) =
@@ -442,22 +488,25 @@ impl Storage {
     }
 
     /// Get count of spans
+    #[allow(clippy::significant_drop_tightening)]
     pub fn count_spans(&self) -> Result<i64> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.lock()?;
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM spans", [], |row| row.get(0))?;
         Ok(count)
     }
 
     /// Get count of logs
+    #[allow(clippy::significant_drop_tightening)]
     pub fn count_logs(&self) -> Result<i64> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.lock()?;
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM logs", [], |row| row.get(0))?;
         Ok(count)
     }
 
     /// Get count of metrics
+    #[allow(clippy::significant_drop_tightening)]
     pub fn count_metrics(&self) -> Result<i64> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.lock()?;
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM metrics", [], |row| row.get(0))?;
         Ok(count)
     }

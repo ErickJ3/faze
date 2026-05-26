@@ -9,10 +9,14 @@ pub struct Resource {
 }
 
 impl Resource {
-    pub fn new(attributes: Attributes) -> Self {
+    /// Build a resource from a set of attributes.
+    #[must_use]
+    pub const fn new(attributes: Attributes) -> Self {
         Self { attributes }
     }
 
+    /// Build a resource with no attributes.
+    #[must_use]
     pub fn empty() -> Self {
         Self {
             attributes: Attributes::new(),
@@ -20,16 +24,19 @@ impl Resource {
     }
 
     /// Get the service name from resource attributes
+    #[must_use]
     pub fn service_name(&self) -> Option<&str> {
         self.attributes.get_string("service.name")
     }
 
     /// Get the service version from resource attributes
+    #[must_use]
     pub fn service_version(&self) -> Option<&str> {
         self.attributes.get_string("service.version")
     }
 
     /// Get the service instance ID from resource attributes
+    #[must_use]
     pub fn service_instance_id(&self) -> Option<&str> {
         self.attributes.get_string("service.instance.id")
     }

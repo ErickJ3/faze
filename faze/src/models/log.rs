@@ -7,37 +7,63 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[derive(Default)]
 pub enum SeverityLevel {
+    /// Severity not set.
     #[default]
     Unspecified = 0,
+    /// Finest-grained tracing detail.
     Trace = 1,
+    /// Trace level, second tier.
     Trace2 = 2,
+    /// Trace level, third tier.
     Trace3 = 3,
+    /// Trace level, fourth tier.
     Trace4 = 4,
+    /// Debug diagnostic information.
     Debug = 5,
+    /// Debug level, second tier.
     Debug2 = 6,
+    /// Debug level, third tier.
     Debug3 = 7,
+    /// Debug level, fourth tier.
     Debug4 = 8,
+    /// Informational event.
     Info = 9,
+    /// Info level, second tier.
     Info2 = 10,
+    /// Info level, third tier.
     Info3 = 11,
+    /// Info level, fourth tier.
     Info4 = 12,
+    /// Warning condition.
     Warn = 13,
+    /// Warn level, second tier.
     Warn2 = 14,
+    /// Warn level, third tier.
     Warn3 = 15,
+    /// Warn level, fourth tier.
     Warn4 = 16,
+    /// Recoverable error.
     Error = 17,
+    /// Error level, second tier.
     Error2 = 18,
+    /// Error level, third tier.
     Error3 = 19,
+    /// Error level, fourth tier.
     Error4 = 20,
+    /// Unrecoverable error.
     Fatal = 21,
+    /// Fatal level, second tier.
     Fatal2 = 22,
+    /// Fatal level, third tier.
     Fatal3 = 23,
+    /// Fatal level, fourth tier.
     Fatal4 = 24,
 }
 
 impl SeverityLevel {
     /// Get a simplified string representation
-    pub fn as_str(&self) -> &'static str {
+    #[must_use]
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Unspecified => "UNSPECIFIED",
             Self::Trace | Self::Trace2 | Self::Trace3 | Self::Trace4 => "TRACE",
@@ -46,6 +72,38 @@ impl SeverityLevel {
             Self::Warn | Self::Warn2 | Self::Warn3 | Self::Warn4 => "WARN",
             Self::Error | Self::Error2 | Self::Error3 | Self::Error4 => "ERROR",
             Self::Fatal | Self::Fatal2 | Self::Fatal3 | Self::Fatal4 => "FATAL",
+        }
+    }
+
+    /// Stable string used for database persistence. Round-trips with `parse_severity_level`.
+    #[must_use]
+    pub const fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Unspecified => "Unspecified",
+            Self::Trace => "Trace",
+            Self::Trace2 => "Trace2",
+            Self::Trace3 => "Trace3",
+            Self::Trace4 => "Trace4",
+            Self::Debug => "Debug",
+            Self::Debug2 => "Debug2",
+            Self::Debug3 => "Debug3",
+            Self::Debug4 => "Debug4",
+            Self::Info => "Info",
+            Self::Info2 => "Info2",
+            Self::Info3 => "Info3",
+            Self::Info4 => "Info4",
+            Self::Warn => "Warn",
+            Self::Warn2 => "Warn2",
+            Self::Warn3 => "Warn3",
+            Self::Warn4 => "Warn4",
+            Self::Error => "Error",
+            Self::Error2 => "Error2",
+            Self::Error3 => "Error3",
+            Self::Error4 => "Error4",
+            Self::Fatal => "Fatal",
+            Self::Fatal2 => "Fatal2",
+            Self::Fatal3 => "Fatal3",
+            Self::Fatal4 => "Fatal4",
         }
     }
 }
@@ -72,8 +130,10 @@ pub struct Log {
 }
 
 impl Log {
+    /// Build a log entry from its component fields.
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    #[must_use]
+    pub const fn new(
         time_unix_nano: i64,
         severity_level: SeverityLevel,
         severity_text: Option<String>,
@@ -95,18 +155,21 @@ impl Log {
         }
     }
 
-    /// Get timestamp as DateTime
-    pub fn timestamp(&self) -> DateTime<Utc> {
+    /// Get timestamp as `DateTime`
+    #[must_use]
+    pub const fn timestamp(&self) -> DateTime<Utc> {
         DateTime::from_timestamp_nanos(self.time_unix_nano)
     }
 
     /// Check if log is correlated with a trace
-    pub fn is_correlated(&self) -> bool {
+    #[must_use]
+    pub const fn is_correlated(&self) -> bool {
         self.trace_id.is_some() && self.span_id.is_some()
     }
 
     /// Check if log level is error or fatal
-    pub fn is_error(&self) -> bool {
+    #[must_use]
+    pub const fn is_error(&self) -> bool {
         matches!(
             self.severity_level,
             SeverityLevel::Error
