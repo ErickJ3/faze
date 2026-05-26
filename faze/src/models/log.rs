@@ -37,6 +37,7 @@ pub enum SeverityLevel {
 
 impl SeverityLevel {
     /// Get a simplified string representation
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Unspecified => "UNSPECIFIED",
@@ -46,6 +47,38 @@ impl SeverityLevel {
             Self::Warn | Self::Warn2 | Self::Warn3 | Self::Warn4 => "WARN",
             Self::Error | Self::Error2 | Self::Error3 | Self::Error4 => "ERROR",
             Self::Fatal | Self::Fatal2 | Self::Fatal3 | Self::Fatal4 => "FATAL",
+        }
+    }
+
+    /// Stable string used for database persistence. Round-trips with `parse_severity_level`.
+    #[must_use]
+    pub fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Unspecified => "Unspecified",
+            Self::Trace => "Trace",
+            Self::Trace2 => "Trace2",
+            Self::Trace3 => "Trace3",
+            Self::Trace4 => "Trace4",
+            Self::Debug => "Debug",
+            Self::Debug2 => "Debug2",
+            Self::Debug3 => "Debug3",
+            Self::Debug4 => "Debug4",
+            Self::Info => "Info",
+            Self::Info2 => "Info2",
+            Self::Info3 => "Info3",
+            Self::Info4 => "Info4",
+            Self::Warn => "Warn",
+            Self::Warn2 => "Warn2",
+            Self::Warn3 => "Warn3",
+            Self::Warn4 => "Warn4",
+            Self::Error => "Error",
+            Self::Error2 => "Error2",
+            Self::Error3 => "Error3",
+            Self::Error4 => "Error4",
+            Self::Fatal => "Fatal",
+            Self::Fatal2 => "Fatal2",
+            Self::Fatal3 => "Fatal3",
+            Self::Fatal4 => "Fatal4",
         }
     }
 }

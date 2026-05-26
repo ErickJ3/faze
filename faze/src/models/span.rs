@@ -16,6 +16,21 @@ pub enum SpanKind {
     Consumer,
 }
 
+impl SpanKind {
+    /// Stable string used for database persistence. Do not change without a migration.
+    #[must_use]
+    pub fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Unspecified => "Unspecified",
+            Self::Internal => "Internal",
+            Self::Server => "Server",
+            Self::Client => "Client",
+            Self::Producer => "Producer",
+            Self::Consumer => "Consumer",
+        }
+    }
+}
+
 /// Span status code
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]

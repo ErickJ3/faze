@@ -12,6 +12,19 @@ pub enum MetricType {
     Summary,
 }
 
+impl MetricType {
+    /// Stable string used for database persistence. Round-trips with `parse_metric_type`.
+    #[must_use]
+    pub fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Gauge => "Gauge",
+            Self::Sum => "Sum",
+            Self::Histogram => "Histogram",
+            Self::Summary => "Summary",
+        }
+    }
+}
+
 /// Aggregation temporality for Sum and Histogram metrics
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -21,6 +34,18 @@ pub enum AggregationTemporality {
     Unspecified,
     Delta,
     Cumulative,
+}
+
+impl AggregationTemporality {
+    /// Stable string used for database persistence. Round-trips with `parse_temporality`.
+    #[must_use]
+    pub fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Unspecified => "Unspecified",
+            Self::Delta => "Delta",
+            Self::Cumulative => "Cumulative",
+        }
+    }
 }
 
 /// Represents a metric data point
