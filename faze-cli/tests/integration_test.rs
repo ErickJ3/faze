@@ -1,4 +1,10 @@
-#![allow(missing_docs, clippy::float_cmp, clippy::uninlined_format_args, clippy::similar_names, clippy::doc_markdown)]
+#![allow(
+    missing_docs,
+    clippy::float_cmp,
+    clippy::uninlined_format_args,
+    clippy::similar_names,
+    clippy::doc_markdown
+)]
 
 use faze::Storage;
 use faze_collector::proto::opentelemetry::proto::collector::trace::v1::ExportTraceServiceRequest;

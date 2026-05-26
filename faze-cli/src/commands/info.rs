@@ -34,8 +34,7 @@ fn get_size_status(mb: f64) -> (String, &'static str) {
 
 fn shorten_path(path: &std::path::Path) -> String {
     let path_str = path.display().to_string();
-    std::env::var("HOME")
-        .map_or_else(|_| path_str.clone(), |home| path_str.replace(&home, "~"))
+    std::env::var("HOME").map_or_else(|_| path_str.clone(), |home| path_str.replace(&home, "~"))
 }
 
 #[allow(clippy::cast_precision_loss, clippy::too_many_lines)]

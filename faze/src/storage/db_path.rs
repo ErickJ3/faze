@@ -11,15 +11,16 @@ pub fn get_config_dir() -> Result<PathBuf, std::io::Error> {
             .map_or_else(|_| PathBuf::from("."), PathBuf::from)
             .join("faze")
     } else {
-        env::var("XDG_CONFIG_HOME").map_or_else(
-            |_| {
-                env::var("HOME")
-                    .map_or_else(|_| PathBuf::from("."), PathBuf::from)
-                    .join(".config")
-            },
-            PathBuf::from,
-        )
-        .join("faze")
+        env::var("XDG_CONFIG_HOME")
+            .map_or_else(
+                |_| {
+                    env::var("HOME")
+                        .map_or_else(|_| PathBuf::from("."), PathBuf::from)
+                        .join(".config")
+                },
+                PathBuf::from,
+            )
+            .join("faze")
     };
 
     if !config_dir.exists() {
