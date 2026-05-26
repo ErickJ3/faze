@@ -16,12 +16,16 @@ pub struct OtlpLogsCollector {
 }
 
 impl OtlpLogsCollector {
+    /// Build a collector backed by the given storage handle.
+    #[must_use]
     pub fn new(storage: Storage) -> Self {
         Self {
             storage: Arc::new(storage),
         }
     }
 
+    /// Wrap the collector into a tonic `LogsServiceServer`.
+    #[must_use]
     pub fn into_service(self) -> LogsServiceServer<Self> {
         LogsServiceServer::new(self)
     }
@@ -43,7 +47,7 @@ impl LogsService for OtlpLogsCollector {
             if let Err(e) = self.storage.insert_log(log) {
                 error!("Failed to insert span {:?}: {}", log.span_id, e);
                 rejected_log_records += 1;
-                error_messages.push(format!("span {:?}: {}", log.span_id, e));
+                error_messages.push(format!("span {:?}: {e}", log.span_id));
             }
         }
 

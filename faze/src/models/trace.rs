@@ -14,6 +14,8 @@ pub struct Trace {
 }
 
 impl Trace {
+    /// Build a trace, deriving the service name from the root span when possible.
+    #[must_use]
     pub fn new(trace_id: String, spans: Vec<Span>) -> Self {
         let service_name = spans
             .iter()
@@ -29,11 +31,13 @@ impl Trace {
     }
 
     /// Get the root span
+    #[must_use]
     pub fn root_span(&self) -> Option<&Span> {
         self.spans.iter().find(|s| s.is_root())
     }
 
     /// Get total duration of the trace
+    #[must_use]
     pub fn duration_nanos(&self) -> i64 {
         if self.spans.is_empty() {
             return 0;
@@ -57,11 +61,14 @@ impl Trace {
     }
 
     /// Get duration in milliseconds
+    #[must_use]
+    #[allow(clippy::cast_precision_loss)]
     pub fn duration_ms(&self) -> f64 {
         self.duration_nanos() as f64 / 1_000_000.0
     }
 
     /// Get start time
+    #[must_use]
     pub fn start_time(&self) -> Option<DateTime<Utc>> {
         self.spans
             .iter()
@@ -71,6 +78,7 @@ impl Trace {
     }
 
     /// Get end time
+    #[must_use]
     pub fn end_time(&self) -> Option<DateTime<Utc>> {
         self.spans
             .iter()
@@ -80,40 +88,45 @@ impl Trace {
     }
 
     /// Get number of spans
-    pub fn span_count(&self) -> usize {
+    #[must_use]
+    pub const fn span_count(&self) -> usize {
         self.spans.len()
     }
 
     /// Check if trace has any error spans
+    #[must_use]
     pub fn has_errors(&self) -> bool {
-        self.spans.iter().any(|s| s.is_error())
+        self.spans.iter().any(Span::is_error)
     }
 
     /// Get all error spans
+    #[must_use]
     pub fn error_spans(&self) -> Vec<&Span> {
         self.spans.iter().filter(|s| s.is_error()).collect()
     }
 
     /// Get spans by parent ID
+    #[must_use]
     pub fn children_of(&self, parent_span_id: &str) -> Vec<&Span> {
         self.spans
             .iter()
             .filter(|s| {
                 s.parent_span_id
                     .as_ref()
-                    .map(|id| id == parent_span_id)
-                    .unwrap_or(false)
+                    .is_some_and(|id| id == parent_span_id)
             })
             .collect()
     }
 
     /// Get span by ID
+    #[must_use]
     pub fn get_span(&self, span_id: &str) -> Option<&Span> {
         self.spans.iter().find(|s| s.span_id == span_id)
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use crate::models::{
@@ -137,8 +150,8 @@ mod tests {
         Span::new(
             span_id.to_string(),
             "trace123".to_string(),
-            parent_id.map(|s| s.to_string()),
-            format!("operation-{}", span_id),
+            parent_id.map(str::to_string),
+            format!("operation-{span_id}"),
             SpanKind::Server,
             start,
             end,

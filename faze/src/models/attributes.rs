@@ -5,41 +5,47 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum AttributeValue {
+    /// UTF-8 string value.
     String(String),
+    /// 64-bit signed integer value.
     Int(i64),
+    /// 64-bit floating point value.
     Double(f64),
+    /// Boolean value.
     Bool(bool),
+    /// Raw byte buffer value.
     Bytes(Vec<u8>),
-    Array(Vec<AttributeValue>),
+    /// Nested array of values.
+    Array(Vec<Self>),
 }
 
 impl From<String> for AttributeValue {
     fn from(s: String) -> Self {
-        AttributeValue::String(s)
+        Self::String(s)
     }
 }
 
 impl From<&str> for AttributeValue {
     fn from(s: &str) -> Self {
-        AttributeValue::String(s.to_string())
+        Self::String(s.to_string())
     }
 }
 
 impl From<i64> for AttributeValue {
     fn from(i: i64) -> Self {
-        AttributeValue::Int(i)
+        Self::Int(i)
     }
 }
 
 impl From<f64> for AttributeValue {
     fn from(f: f64) -> Self {
-        AttributeValue::Double(f)
+        Self::Double(f)
     }
 }
 
 impl From<bool> for AttributeValue {
     fn from(b: bool) -> Self {
-        AttributeValue::Bool(b)
+        Self::Bool(b)
     }
 }
 
@@ -48,30 +54,42 @@ impl From<bool> for AttributeValue {
 pub struct Attributes(HashMap<String, AttributeValue>);
 
 impl Attributes {
+    /// Create an empty attribute collection.
+    #[must_use]
     pub fn new() -> Self {
         Self(HashMap::new())
     }
 
+    /// Insert a key-value pair, replacing any existing value for the key.
     pub fn insert(&mut self, key: impl Into<String>, value: impl Into<AttributeValue>) {
         self.0.insert(key.into(), value.into());
     }
 
+    /// Get the value associated with `key`, if present.
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<&AttributeValue> {
         self.0.get(key)
     }
 
+    /// Iterate over the underlying key-value pairs.
     pub fn iter(&self) -> impl Iterator<Item = (&String, &AttributeValue)> {
         self.0.iter()
     }
 
+    /// Number of stored key-value pairs.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    /// True when no pairs are stored.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
+    /// Borrow the string value for `key`, if it is stored as a string.
+    #[must_use]
     pub fn get_string(&self, key: &str) -> Option<&str> {
         match self.0.get(key) {
             Some(AttributeValue::String(s)) => Some(s.as_str()),
@@ -79,6 +97,8 @@ impl Attributes {
         }
     }
 
+    /// Copy the integer value for `key`, if it is stored as an integer.
+    #[must_use]
     pub fn get_int(&self, key: &str) -> Option<i64> {
         match self.0.get(key) {
             Some(AttributeValue::Int(i)) => Some(*i),
@@ -86,6 +106,8 @@ impl Attributes {
         }
     }
 
+    /// Copy the boolean value for `key`, if it is stored as a boolean.
+    #[must_use]
     pub fn get_bool(&self, key: &str) -> Option<bool> {
         match self.0.get(key) {
             Some(AttributeValue::Bool(b)) => Some(*b),
@@ -93,6 +115,8 @@ impl Attributes {
         }
     }
 
+    /// Copy the floating point value for `key`, if it is stored as a double.
+    #[must_use]
     pub fn get_double(&self, key: &str) -> Option<f64> {
         match self.0.get(key) {
             Some(AttributeValue::Double(d)) => Some(*d),

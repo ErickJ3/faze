@@ -7,22 +7,19 @@ use std::path::{Path, PathBuf};
 /// This is for configuration files only, not for data storage
 pub fn get_config_dir() -> Result<PathBuf, std::io::Error> {
     let config_dir = if cfg!(target_os = "windows") {
-        // Windows: %APPDATA%/faze
         env::var("APPDATA")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from("."))
+            .map_or_else(|_| PathBuf::from("."), PathBuf::from)
             .join("faze")
     } else {
-        // Unix: ~/.config/faze
-        env::var("XDG_CONFIG_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| {
+        env::var("XDG_CONFIG_HOME").map_or_else(
+            |_| {
                 env::var("HOME")
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|_| PathBuf::from("."))
+                    .map_or_else(|_| PathBuf::from("."), PathBuf::from)
                     .join(".config")
-            })
-            .join("faze")
+            },
+            PathBuf::from,
+        )
+        .join("faze")
     };
 
     if !config_dir.exists() {
@@ -36,26 +33,23 @@ pub fn get_config_dir() -> Result<PathBuf, std::io::Error> {
 /// Returns ~/.local/share/faze on Linux/macOS or %LOCALAPPDATA%/faze on Windows
 pub fn get_data_dir() -> Result<PathBuf, std::io::Error> {
     let data_dir = if cfg!(target_os = "windows") {
-        // Windows: %LOCALAPPDATA%/faze
         env::var("LOCALAPPDATA")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| {
-                env::var("APPDATA")
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|_| PathBuf::from("."))
-            })
+            .map_or_else(
+                |_| env::var("APPDATA").map_or_else(|_| PathBuf::from("."), PathBuf::from),
+                PathBuf::from,
+            )
             .join("faze")
     } else {
-        // Unix: ~/.local/share/faze
         env::var("XDG_DATA_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| {
-                env::var("HOME")
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|_| PathBuf::from("."))
-                    .join(".local")
-                    .join("share")
-            })
+            .map_or_else(
+                |_| {
+                    env::var("HOME")
+                        .map_or_else(|_| PathBuf::from("."), PathBuf::from)
+                        .join(".local")
+                        .join("share")
+                },
+                PathBuf::from,
+            )
             .join("faze")
     };
 
@@ -68,6 +62,7 @@ pub fn get_data_dir() -> Result<PathBuf, std::io::Error> {
 
 /// Detect the project directory by looking for common project markers
 /// Returns the project root or current directory if no marker found
+#[must_use]
 pub fn detect_project_root() -> PathBuf {
     let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
 
@@ -125,14 +120,14 @@ fn project_path_to_db_name(project_path: &Path) -> String {
 }
 
 /// Get the database path for the current project
-/// Returns a path in ~/.local/share/faze/<project_name>.db on Unix
-/// or %LOCALAPPDATA%/faze/<project_name>.db on Windows
+/// Returns a path in ~/.local/share/faze/<`project_name`>.db on Unix
+/// or %LOCALAPPDATA%/faze/<`project_name`>.db on Windows
 pub fn get_project_db_path() -> Result<PathBuf, std::io::Error> {
     let data_dir = get_data_dir()?;
     let project_root = detect_project_root();
     let db_name = project_path_to_db_name(&project_root);
 
-    Ok(data_dir.join(format!("{}.db", db_name)))
+    Ok(data_dir.join(format!("{db_name}.db")))
 }
 
 /// Get the default database path

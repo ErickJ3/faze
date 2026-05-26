@@ -1,11 +1,18 @@
+//! Example client that sends OTLP traces to Faze.
+//!
+//! Usage:
+//!   1. Start Faze server: `cargo run -p faze-cli -- serve --db-path faze.db`
+//!   2. Run this example: `cargo run --example send_traces`
+//!   3. Query traces in another terminal (after stopping the server):
+//!      `cargo run -p faze-cli -- traces --db-path faze.db`
+
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::redundant_closure_for_method_calls,
+    clippy::too_many_lines
+)]
+
 use faze_collector::proto::opentelemetry::proto::collector::trace::v1::ExportTraceServiceRequest;
-/// Example client that sends OTLP traces to Faze
-///
-/// Usage:
-///   1. Start Faze server: cargo run -p faze-cli -- serve --db-path faze.db
-///   2. Run this example: cargo run --example send_traces
-///   3. Query traces in another terminal (after stopping the server):
-///      cargo run -p faze-cli -- traces --db-path faze.db
 use faze_collector::proto::opentelemetry::proto::collector::trace::v1::trace_service_client::TraceServiceClient;
 use faze_collector::proto::opentelemetry::proto::common::v1::{AnyValue, KeyValue, any_value};
 use faze_collector::proto::opentelemetry::proto::resource::v1::Resource;

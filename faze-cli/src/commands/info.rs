@@ -1,6 +1,7 @@
-use colored::*;
+use colored::Colorize;
 use faze::{Storage, detect_project_root, get_data_dir, get_project_db_path};
 
+#[allow(clippy::cast_precision_loss)]
 fn format_number(n: i64) -> String {
     if n >= 1_000_000 {
         format!("{:.1}M", n as f64 / 1_000_000.0)
@@ -11,12 +12,13 @@ fn format_number(n: i64) -> String {
     }
 }
 
+#[allow(clippy::cast_precision_loss)]
 fn format_size(bytes: u64) -> String {
     let mb = bytes as f64 / 1_024_000.0;
     if mb >= 1000.0 {
         format!("{:.2} GB", mb / 1000.0)
     } else {
-        format!("{:.2} MB", mb)
+        format!("{mb:.2} MB")
     }
 }
 
@@ -32,14 +34,12 @@ fn get_size_status(mb: f64) -> (String, &'static str) {
 
 fn shorten_path(path: &std::path::Path) -> String {
     let path_str = path.display().to_string();
-    if let Ok(home) = std::env::var("HOME") {
-        path_str.replace(&home, "~")
-    } else {
-        path_str
-    }
+    std::env::var("HOME")
+        .map_or_else(|_| path_str.clone(), |home| path_str.replace(&home, "~"))
 }
 
-pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
+#[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
+pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let project_root = detect_project_root();
     let db_path = get_project_db_path()?;
 
@@ -64,8 +64,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             _ => status.green(),
         };
 
-        print!("  {} {} ", "Size:".dimmed(), colored_size);
-        println!("{}", format!("({})", colored_status).dimmed());
+        print!("  {} {colored_size} ", "Size:".dimmed());
+        println!("{}", format!("({colored_status})").dimmed());
 
         if let Ok(storage) = Storage::new() {
             let mut total_items = 0;
@@ -118,7 +118,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let data_dir = get_data_dir()?;
     let entries = std::fs::read_dir(&data_dir)?;
     let mut databases: Vec<_> = entries
-        .filter_map(|e| e.ok())
+        .filter_map(Result::ok)
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("db"))
         .collect();
 
@@ -126,8 +126,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         println!("\n{}", "Other Databases".yellow().bold());
 
         databases.sort_by(|a, b| {
-            let size_a = std::fs::metadata(a.path()).map(|m| m.len()).unwrap_or(0);
-            let size_b = std::fs::metadata(b.path()).map(|m| m.len()).unwrap_or(0);
+            let size_a = std::fs::metadata(a.path()).map_or(0, |m| m.len());
+            let size_b = std::fs::metadata(b.path()).map_or(0, |m| m.len());
             size_b.cmp(&size_a)
         });
 
@@ -155,7 +155,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                     size_str.dimmed()
                 };
 
-                println!("  {}  {}", name.to_string().normal(), size_colored);
+                println!("  {}  {size_colored}", name.to_string().normal());
             }
         }
 

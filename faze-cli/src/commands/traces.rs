@@ -1,8 +1,8 @@
-use colored::*;
+use colored::Colorize;
 use faze::Storage;
 use std::path::PathBuf;
 
-pub async fn run(slow: bool, db_path: Option<PathBuf>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(slow: bool, db_path: Option<PathBuf>) -> Result<(), Box<dyn std::error::Error>> {
     let storage = if let Some(path) = db_path {
         Storage::new_with_path(&path)?
     } else {
@@ -20,11 +20,11 @@ pub async fn run(slow: bool, db_path: Option<PathBuf>) -> Result<(), Box<dyn std
         if !slow || trace.duration_ms() > 100.0 {
             let duration = trace.duration_ms();
             let duration_colored = if duration > 1000.0 {
-                format!("{:.2}ms", duration).red()
+                format!("{duration:.2}ms").red()
             } else if duration > 100.0 {
-                format!("{:.2}ms", duration).yellow()
+                format!("{duration:.2}ms").yellow()
             } else {
-                format!("{:.2}ms", duration).green()
+                format!("{duration:.2}ms").green()
             };
 
             let service = trace
@@ -40,12 +40,8 @@ pub async fn run(slow: bool, db_path: Option<PathBuf>) -> Result<(), Box<dyn std
             };
 
             println!(
-                "[{}] {} - {} - {}{}",
+                "[{}] {service} - {duration_colored} - {span_count}{error_badge}",
                 trace.trace_id[..8].dimmed(),
-                service,
-                duration_colored,
-                span_count,
-                error_badge
             );
         }
     }

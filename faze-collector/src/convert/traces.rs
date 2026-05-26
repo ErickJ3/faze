@@ -4,7 +4,8 @@ use crate::proto::opentelemetry::proto::trace::v1::{
 };
 use faze::models::{Span as FazeSpan, SpanKind, Status as FazeStatus, StatusCode};
 
-/// Convert OTLP SpanKind to internal SpanKind
+/// Convert OTLP `SpanKind` to internal `SpanKind`
+#[allow(clippy::match_same_arms)]
 fn convert_span_kind(kind: i32) -> SpanKind {
     match OtlpSpanKind::try_from(kind) {
         Ok(OtlpSpanKind::Unspecified) => SpanKind::Unspecified,
@@ -17,7 +18,8 @@ fn convert_span_kind(kind: i32) -> SpanKind {
     }
 }
 
-/// Convert OTLP Span to internal Span
+/// Convert OTLP `Span` to internal `Span`
+#[allow(clippy::cast_possible_wrap)]
 fn convert_span(span: &Span, service_name: Option<String>) -> FazeSpan {
     let span_id = bytes_to_hex(&span.span_id);
     let trace_id = bytes_to_hex(&span.trace_id);
@@ -45,7 +47,8 @@ fn convert_span(span: &Span, service_name: Option<String>) -> FazeSpan {
     )
 }
 
-/// Convert OTLP ResourceSpans to list of internal Spans
+/// Convert OTLP `ResourceSpans` to list of internal `Span`s
+#[must_use]
 pub fn convert_resource_spans(resource_spans: &[ResourceSpans]) -> Vec<FazeSpan> {
     let mut spans = Vec::new();
 
@@ -54,7 +57,7 @@ pub fn convert_resource_spans(resource_spans: &[ResourceSpans]) -> Vec<FazeSpan>
             .resource
             .as_ref()
             .map(convert_resource)
-            .and_then(|r| r.service_name().map(|s| s.to_string()));
+            .and_then(|r| r.service_name().map(str::to_string));
 
         for scope_spans in &rs.scope_spans {
             for span in &scope_spans.spans {
@@ -66,7 +69,8 @@ pub fn convert_resource_spans(resource_spans: &[ResourceSpans]) -> Vec<FazeSpan>
     spans
 }
 
-/// Convert OTLP Status to internal Status
+/// Convert OTLP `Status` to internal `Status`
+#[allow(clippy::match_same_arms)]
 fn convert_status(status: &Status) -> FazeStatus {
     let code = match OtlpSpanStatusCode::try_from(status.code) {
         Ok(OtlpSpanStatusCode::Unset) => StatusCode::Unset,
@@ -113,7 +117,7 @@ mod tests {
     fn test_convert_status() {
         let status = Status {
             code: OtlpSpanStatusCode::Ok as i32,
-            message: "".to_string(),
+            message: String::new(),
         };
         let result = convert_status(&status);
         assert_eq!(result.code, StatusCode::Ok);

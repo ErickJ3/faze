@@ -16,12 +16,16 @@ pub struct OtlpSpansCollector {
 }
 
 impl OtlpSpansCollector {
+    /// Build a collector backed by the given storage handle.
+    #[must_use]
     pub fn new(storage: Storage) -> Self {
         Self {
             storage: Arc::new(storage),
         }
     }
 
+    /// Wrap the collector into a tonic `TraceServiceServer`.
+    #[must_use]
     pub fn into_service(self) -> TraceServiceServer<Self> {
         TraceServiceServer::new(self)
     }
@@ -42,7 +46,7 @@ impl TraceService for OtlpSpansCollector {
             if let Err(e) = self.storage.insert_span(span) {
                 error!("Failed to insert span {}: {}", span.span_id, e);
                 rejected_spans += 1;
-                error_messages.push(format!("span {}: {}", span.span_id, e));
+                error_messages.push(format!("span {}: {e}", span.span_id));
             }
         }
 
@@ -340,8 +344,8 @@ mod tests {
         for (i, kind) in kinds.iter().enumerate() {
             let mut span = create_test_otlp_span(
                 &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-                &[i as u8 + 1, 2, 3, 4, 5, 6, 7, 8],
-                &format!("span-{}", i),
+                &[u8::try_from(i).unwrap_or(0) + 1, 2, 3, 4, 5, 6, 7, 8],
+                &format!("span-{i}"),
             );
             span.kind = *kind as i32;
             spans.push(span);

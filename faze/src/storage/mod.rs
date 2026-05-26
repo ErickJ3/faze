@@ -23,7 +23,7 @@ use schema::init_schema;
 /// Errors returned by [`Storage`] operations.
 #[derive(Debug, Error)]
 pub enum StorageError {
-    /// Underlying SQLite failure.
+    /// Underlying `SQLite` failure.
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
@@ -65,11 +65,11 @@ impl Storage {
     ///
     /// This will:
     /// 1. Detect the current project by looking for markers (.git, Cargo.toml, package.json, etc.)
-    /// 2. Create a database in ~/.local/share/faze/<project_name>.db
+    /// 2. Create a database in `~/.local/share/faze/<project_name>.db`
     /// 3. Multiple terminals in the same project will share the same database
     pub fn new() -> Result<Self> {
         let db_path = get_project_db_path().map_err(|e| {
-            StorageError::InvalidInput(format!("Failed to determine database path: {}", e))
+            StorageError::InvalidInput(format!("Failed to determine database path: {e}"))
         })?;
 
         Self::new_with_path(&db_path)
@@ -96,7 +96,7 @@ impl Storage {
             && !parent.exists()
         {
             std::fs::create_dir_all(parent).map_err(|e| {
-                StorageError::InvalidInput(format!("Failed to create directory: {}", e))
+                StorageError::InvalidInput(format!("Failed to create directory: {e}"))
             })?;
         }
 
@@ -123,6 +123,7 @@ impl Storage {
     }
 
     /// Insert multiple spans atomically under a single transaction.
+    #[allow(clippy::significant_drop_tightening)]
     pub fn insert_spans(&self, spans: &[Span]) -> Result<()> {
         if spans.is_empty() {
             return Ok(());
@@ -164,6 +165,7 @@ impl Storage {
     }
 
     /// Insert multiple logs atomically under a single transaction.
+    #[allow(clippy::significant_drop_tightening)]
     pub fn insert_logs(&self, logs: &[Log]) -> Result<()> {
         if logs.is_empty() {
             return Ok(());
@@ -201,6 +203,7 @@ impl Storage {
     }
 
     /// Insert multiple metrics atomically under a single transaction.
+    #[allow(clippy::significant_drop_tightening)]
     pub fn insert_metrics(&self, metrics: &[Metric]) -> Result<()> {
         if metrics.is_empty() {
             return Ok(());
@@ -243,8 +246,7 @@ impl Storage {
 
         if spans.is_empty() {
             return Err(StorageError::NotFound(format!(
-                "Trace not found: {}",
-                trace_id
+                "Trace not found: {trace_id}"
             )));
         }
 
@@ -252,6 +254,7 @@ impl Storage {
     }
 
     /// Get all spans for a trace
+    #[allow(clippy::significant_drop_tightening)]
     fn get_spans_by_trace_id(&self, trace_id: &str) -> Result<Vec<Span>> {
         let conn = self.lock()?;
         let mut stmt = conn.prepare(
@@ -271,6 +274,12 @@ impl Storage {
     }
 
     /// List traces with optional filters
+    #[allow(
+        clippy::significant_drop_tightening,
+        clippy::option_if_let_else,
+        clippy::cast_possible_wrap,
+        clippy::redundant_closure_for_method_calls
+    )]
     pub fn list_traces(
         &self,
         service_name: Option<&str>,
@@ -314,6 +323,12 @@ impl Storage {
     }
 
     /// List logs with optional filters
+    #[allow(
+        clippy::significant_drop_tightening,
+        clippy::option_if_let_else,
+        clippy::cast_possible_wrap,
+        clippy::redundant_closure_for_method_calls
+    )]
     pub fn list_logs(&self, service_name: Option<&str>, limit: Option<usize>) -> Result<Vec<Log>> {
         let conn = self.lock()?;
 
@@ -379,6 +394,12 @@ impl Storage {
     }
 
     /// List metrics with optional service-name filter and result cap.
+    #[allow(
+        clippy::significant_drop_tightening,
+        clippy::option_if_let_else,
+        clippy::cast_possible_wrap,
+        clippy::redundant_closure_for_method_calls
+    )]
     pub fn list_metrics(
         &self,
         service_name: Option<&str>,
@@ -467,6 +488,7 @@ impl Storage {
     }
 
     /// Get count of spans
+    #[allow(clippy::significant_drop_tightening)]
     pub fn count_spans(&self) -> Result<i64> {
         let conn = self.lock()?;
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM spans", [], |row| row.get(0))?;
@@ -474,6 +496,7 @@ impl Storage {
     }
 
     /// Get count of logs
+    #[allow(clippy::significant_drop_tightening)]
     pub fn count_logs(&self) -> Result<i64> {
         let conn = self.lock()?;
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM logs", [], |row| row.get(0))?;
@@ -481,6 +504,7 @@ impl Storage {
     }
 
     /// Get count of metrics
+    #[allow(clippy::significant_drop_tightening)]
     pub fn count_metrics(&self) -> Result<i64> {
         let conn = self.lock()?;
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM metrics", [], |row| row.get(0))?;

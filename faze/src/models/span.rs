@@ -7,19 +7,25 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[derive(Default)]
 pub enum SpanKind {
+    /// Span kind is not specified.
     #[default]
     Unspecified,
+    /// Internal operation within an application.
     Internal,
+    /// Inbound server handler.
     Server,
+    /// Outbound client call.
     Client,
+    /// Asynchronous producer of a message.
     Producer,
+    /// Asynchronous consumer of a message.
     Consumer,
 }
 
 impl SpanKind {
     /// Stable string used for database persistence. Do not change without a migration.
     #[must_use]
-    pub fn as_db_str(self) -> &'static str {
+    pub const fn as_db_str(self) -> &'static str {
         match self {
             Self::Unspecified => "Unspecified",
             Self::Internal => "Internal",
@@ -36,27 +42,36 @@ impl SpanKind {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[derive(Default)]
 pub enum StatusCode {
+    /// Status not set by the producer.
     #[default]
     Unset,
+    /// Operation completed successfully.
     Ok,
+    /// Operation failed.
     Error,
 }
 
 /// Span status
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Status {
+    /// Status code (OK, Error, Unset).
     pub code: StatusCode,
+    /// Optional descriptive message associated with the status.
     pub message: Option<String>,
 }
 
 impl Status {
-    pub fn ok() -> Self {
+    /// Build an OK status with no message.
+    #[must_use]
+    pub const fn ok() -> Self {
         Self {
             code: StatusCode::Ok,
             message: None,
         }
     }
 
+    /// Build an Error status carrying a message.
+    #[must_use]
     pub fn error(message: impl Into<String>) -> Self {
         Self {
             code: StatusCode::Error,
@@ -64,7 +79,9 @@ impl Status {
         }
     }
 
-    pub fn unset() -> Self {
+    /// Build an Unset status with no message.
+    #[must_use]
+    pub const fn unset() -> Self {
         Self {
             code: StatusCode::Unset,
             message: None,
@@ -104,8 +121,10 @@ pub struct Span {
 }
 
 impl Span {
+    /// Build a span from its component fields.
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    #[must_use]
+    pub const fn new(
         span_id: String,
         trace_id: String,
         parent_span_id: Option<String>,
@@ -132,37 +151,45 @@ impl Span {
     }
 
     /// Get duration in nanoseconds
-    pub fn duration_nanos(&self) -> i64 {
+    #[must_use]
+    pub const fn duration_nanos(&self) -> i64 {
         self.end_time_unix_nano - self.start_time_unix_nano
     }
 
     /// Get duration in milliseconds
+    #[must_use]
+    #[allow(clippy::cast_precision_loss)]
     pub fn duration_ms(&self) -> f64 {
         self.duration_nanos() as f64 / 1_000_000.0
     }
 
-    /// Get start time as DateTime
-    pub fn start_time(&self) -> DateTime<Utc> {
+    /// Get start time as `DateTime`
+    #[must_use]
+    pub const fn start_time(&self) -> DateTime<Utc> {
         DateTime::from_timestamp_nanos(self.start_time_unix_nano)
     }
 
-    /// Get end time as DateTime
-    pub fn end_time(&self) -> DateTime<Utc> {
+    /// Get end time as `DateTime`
+    #[must_use]
+    pub const fn end_time(&self) -> DateTime<Utc> {
         DateTime::from_timestamp_nanos(self.end_time_unix_nano)
     }
 
     /// Check if this is a root span (no parent)
-    pub fn is_root(&self) -> bool {
+    #[must_use]
+    pub const fn is_root(&self) -> bool {
         self.parent_span_id.is_none()
     }
 
     /// Check if span has error status
+    #[must_use]
     pub fn is_error(&self) -> bool {
         self.status.code == StatusCode::Error
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

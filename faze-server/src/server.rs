@@ -20,6 +20,7 @@ pub struct ApiServer {
 
 impl ApiServer {
     /// Create a new API server
+    #[must_use]
     pub fn new(storage: Storage, port: u16) -> Self {
         Self {
             storage: Arc::new(storage),

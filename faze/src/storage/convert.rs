@@ -12,6 +12,7 @@ pub fn from_json<'de, T: Deserialize<'de>>(json: &'de str) -> Result<T, serde_js
     serde_json::from_str(json)
 }
 
+#[allow(clippy::match_same_arms)]
 pub fn parse_metric_type(type_str: &str) -> MetricType {
     match type_str {
         "Gauge" => MetricType::Gauge,
@@ -22,6 +23,7 @@ pub fn parse_metric_type(type_str: &str) -> MetricType {
     }
 }
 
+#[allow(clippy::match_same_arms)]
 pub fn parse_temporality(temporality_str: &str) -> AggregationTemporality {
     match temporality_str {
         "Unspecified" => AggregationTemporality::Unspecified,
@@ -30,6 +32,8 @@ pub fn parse_temporality(temporality_str: &str) -> AggregationTemporality {
         _ => AggregationTemporality::Unspecified,
     }
 }
+
+#[allow(clippy::match_same_arms)]
 pub fn parse_span_kind(kind_str: &str) -> SpanKind {
     match kind_str {
         "Unspecified" => SpanKind::Unspecified,
@@ -42,6 +46,7 @@ pub fn parse_span_kind(kind_str: &str) -> SpanKind {
     }
 }
 
+#[allow(clippy::match_same_arms)]
 pub fn parse_severity_level(severity_str: &str) -> SeverityLevel {
     match severity_str {
         "Unspecified" => SeverityLevel::Unspecified,

@@ -30,8 +30,7 @@ async fn serve_embedded_asset(uri: Uri) -> impl IntoResponse {
 fn resolve_response(path: &str, include_body: bool) -> Option<Response<Body>> {
     resolve_asset(path).map(|(asset_path, content)| {
         let mime = guess_mime(&asset_path).first_or_octet_stream();
-        let mime_header =
-            HeaderValue::from_str(mime.as_ref()).unwrap_or_else(|_| FALLBACK_MIME.clone());
+        let mime_header = HeaderValue::from_str(mime.as_ref()).unwrap_or(FALLBACK_MIME);
 
         let body = if include_body {
             Body::from(content.into_owned())

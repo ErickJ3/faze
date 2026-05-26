@@ -1,8 +1,9 @@
-use colored::*;
+use colored::Colorize;
 use faze::Storage;
 use std::path::PathBuf;
 
-pub async fn run(
+#[allow(clippy::needless_pass_by_value)]
+pub fn run(
     service: Option<String>,
     db_path: Option<PathBuf>,
 ) -> Result<(), Box<dyn std::error::Error>> {

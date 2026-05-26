@@ -89,6 +89,8 @@ fn convert_metric(otlp_metric: OtlpMetric, service_name: Option<String>) -> Opti
     }
 }
 
+/// Convert a batch of OTLP `ResourceMetrics` into internal `Metric`s.
+#[must_use]
 pub fn convert_resource_metrics(resource_metrics: Vec<ResourceMetrics>) -> Vec<FazeMetric> {
     let mut faze_metrics = Vec::new();
 
@@ -97,7 +99,7 @@ pub fn convert_resource_metrics(resource_metrics: Vec<ResourceMetrics>) -> Vec<F
             .resource
             .as_ref()
             .map(convert_resource)
-            .and_then(|r| r.service_name().map(|s| s.to_string()));
+            .and_then(|r| r.service_name().map(str::to_string));
 
         for sm in rm.scope_metrics {
             for metric in sm.metrics {
@@ -111,6 +113,12 @@ pub fn convert_resource_metrics(resource_metrics: Vec<ResourceMetrics>) -> Vec<F
     faze_metrics
 }
 
+#[allow(
+    clippy::needless_pass_by_value,
+    clippy::option_if_let_else,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss
+)]
 fn convert_number_data_point(dp: NumberDataPoint) -> MetricDataPoint {
     let value = match dp.value {
         Some(v) => match v {
@@ -132,6 +140,11 @@ fn convert_number_data_point(dp: NumberDataPoint) -> MetricDataPoint {
     )
 }
 
+#[allow(
+    clippy::needless_pass_by_value,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss
+)]
 fn convert_histogram_data_point(dp: HistogramDataPoint) -> MetricDataPoint {
     let value = dp.sum.unwrap_or(dp.count as f64);
 
@@ -143,6 +156,7 @@ fn convert_histogram_data_point(dp: HistogramDataPoint) -> MetricDataPoint {
     )
 }
 
+#[allow(clippy::needless_pass_by_value, clippy::cast_possible_wrap)]
 fn convert_summary_data_point(dp: SummaryDataPoint) -> MetricDataPoint {
     MetricDataPoint::new(
         dp.time_unix_nano as i64,
@@ -152,7 +166,7 @@ fn convert_summary_data_point(dp: SummaryDataPoint) -> MetricDataPoint {
     )
 }
 
-fn convert_temporality(t: i32) -> AggregationTemporality {
+const fn convert_temporality(t: i32) -> AggregationTemporality {
     match t {
         1 => AggregationTemporality::Delta,
         2 => AggregationTemporality::Cumulative,

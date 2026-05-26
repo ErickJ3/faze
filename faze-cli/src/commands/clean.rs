@@ -1,8 +1,8 @@
-use colored::*;
+use colored::Colorize;
 use faze::{Storage, get_data_dir, get_project_db_path};
 use std::path::PathBuf;
 
-pub async fn run(db_path: Option<PathBuf>, all: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(db_path: Option<PathBuf>, all: bool) -> Result<(), Box<dyn std::error::Error>> {
     if all {
         let data_dir = get_data_dir()?;
         println!("\n{}", "Cleaning All Databases".yellow().bold());
@@ -15,10 +15,10 @@ pub async fn run(db_path: Option<PathBuf>, all: bool) -> Result<(), Box<dyn std:
             let entry = entry?;
             let path = entry.path();
             if path.extension().and_then(|s| s.to_str()) == Some("db") {
-                let name = path
-                    .file_name()
-                    .map(|n| n.to_string_lossy().into_owned())
-                    .unwrap_or_else(|| path.display().to_string());
+                let name = path.file_name().map_or_else(
+                    || path.display().to_string(),
+                    |n| n.to_string_lossy().into_owned(),
+                );
                 if let Err(e) = std::fs::remove_file(&path) {
                     println!("  {} {}: {}", "✗".red(), name, e.to_string().dimmed());
                 } else {
@@ -31,7 +31,7 @@ pub async fn run(db_path: Option<PathBuf>, all: bool) -> Result<(), Box<dyn std:
         println!(
             "\n{} {}",
             "Cleaned".green().bold(),
-            format!("{} database(s)", count).cyan()
+            format!("{count} database(s)").cyan()
         );
     } else {
         let final_path = match db_path {
@@ -47,7 +47,7 @@ pub async fn run(db_path: Option<PathBuf>, all: bool) -> Result<(), Box<dyn std:
                 println!(
                     "\n{}",
                     "Database not found (already deleted or never created)".yellow()
-                )
+                );
             }
             Err(e) => {
                 println!("\n{} {}", "Failed to delete database:".red().bold(), e);
