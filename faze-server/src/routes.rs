@@ -77,9 +77,7 @@ impl From<&faze::Trace> for TraceInfo {
             duration_ms: trace.duration_ms(),
             span_count: trace.span_count(),
             has_errors: trace.has_errors(),
-            start_time: trace
-                .start_time()
-                .map(|dt| dt.timestamp_nanos_opt().unwrap_or(0)),
+            start_time: trace.start_time().and_then(|dt| dt.timestamp_nanos_opt()),
             root_span_name: root_span.map(|s| s.name.clone()),
             root_span_kind: root_span.map(|s| s.kind),
         }
@@ -209,10 +207,8 @@ pub async fn list_services(State(state): State<AppState>) -> impl IntoResponse {
 
     match state.storage.list_traces(None, Some(1000)) {
         Ok(traces) => {
-            let mut services: Vec<String> = traces
-                .iter()
-                .filter_map(|t| t.service_name.clone())
-                .collect();
+            let mut services: Vec<String> =
+                traces.into_iter().filter_map(|t| t.service_name).collect();
 
             services.sort();
             services.dedup();
@@ -268,7 +264,7 @@ pub async fn get_project_info() -> impl IntoResponse {
         .and_then(|n| n.to_str())
         .unwrap_or("unknown");
 
-    let project_path = project_root.to_string_lossy().to_string();
+    let project_path = project_root.to_string_lossy().into_owned();
 
     Json(serde_json::json!({
         "name": project_name,
