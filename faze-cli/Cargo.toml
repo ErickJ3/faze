@@ -43,3 +43,6 @@ tonic.workspace = true
 axum.workspace = true
 anyhow.workspace = true
 colored.workspace = true
+
+[lints]
+workspace = true
