@@ -1,7 +1,11 @@
+//! OTLP collector: HTTP and gRPC entry points plus conversion to Faze domain types.
+
 pub mod convert;
 pub mod grpc;
 pub mod http;
 
+/// Generated OTLP protobuf bindings (see `build.rs`).
+#[allow(missing_docs)]
 pub mod proto {
     pub mod opentelemetry {
         pub mod proto {

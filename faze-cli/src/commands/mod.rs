@@ -1,3 +1,5 @@
+//! CLI subcommand implementations.
+
 pub mod clean;
 pub mod info;
 pub mod logs;
@@ -7,6 +9,7 @@ pub mod tui;
 
 use crate::cli::{Cli, Commands};
 
+/// Run the subcommand selected on the command line.
 pub async fn dispatch(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Commands::Serve {

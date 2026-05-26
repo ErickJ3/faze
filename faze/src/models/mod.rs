@@ -1,3 +1,5 @@
+//! Domain types: spans, logs, metrics, traces, attributes, and resources.
+
 pub mod attributes;
 pub mod log;
 pub mod metric;
