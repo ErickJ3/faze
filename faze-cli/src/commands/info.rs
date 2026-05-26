@@ -131,12 +131,17 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             size_b.cmp(&size_a)
         });
 
-        let current_db_name = db_path.file_name().unwrap().to_string_lossy().to_string();
+        let current_db_name = db_path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
 
         for entry in databases.iter().take(5) {
             let path = entry.path();
             if let Ok(metadata) = std::fs::metadata(&path) {
-                let name = path.file_name().unwrap().to_string_lossy();
+                let Some(name) = path.file_name().map(|n| n.to_string_lossy()) else {
+                    continue;
+                };
 
                 if name == current_db_name {
                     continue;

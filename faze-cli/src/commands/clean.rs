@@ -15,19 +15,14 @@ pub async fn run(db_path: Option<PathBuf>, all: bool) -> Result<(), Box<dyn std:
             let entry = entry?;
             let path = entry.path();
             if path.extension().and_then(|s| s.to_str()) == Some("db") {
+                let name = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| path.display().to_string());
                 if let Err(e) = std::fs::remove_file(&path) {
-                    println!(
-                        "  {} {}: {}",
-                        "✗".red(),
-                        path.file_name().unwrap().to_string_lossy(),
-                        e.to_string().dimmed()
-                    );
+                    println!("  {} {}: {}", "✗".red(), name, e.to_string().dimmed());
                 } else {
-                    println!(
-                        "  {} {}",
-                        "✓".green(),
-                        path.file_name().unwrap().to_string_lossy().bright_white()
-                    );
+                    println!("  {} {}", "✓".green(), name.bright_white());
                     count += 1;
                 }
             }
@@ -39,7 +34,10 @@ pub async fn run(db_path: Option<PathBuf>, all: bool) -> Result<(), Box<dyn std:
             format!("{} database(s)", count).cyan()
         );
     } else {
-        let final_path = db_path.unwrap_or_else(|| get_project_db_path().unwrap());
+        let final_path = match db_path {
+            Some(p) => p,
+            None => get_project_db_path()?,
+        };
         println!("\n{}", "Deleting Database".yellow().bold());
         println!("  Path: {}", final_path.display().to_string().dimmed());
 
