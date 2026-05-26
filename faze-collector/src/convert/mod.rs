@@ -1,3 +1,5 @@
+//! Conversion helpers from OTLP protobuf types into Faze domain types.
+
 use crate::proto::opentelemetry::proto::{
     common::v1::{AnyValue, KeyValue, any_value},
     resource::v1::Resource,
@@ -63,9 +65,15 @@ pub fn convert_resource(resource: &Resource) -> FazeResource {
     FazeResource::new(attributes)
 }
 
-/// Convert bytes to hex string
+/// Convert bytes to hex string.
 pub fn bytes_to_hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{:02x}", b)).collect()
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for &b in bytes {
+        out.push(HEX[(b >> 4) as usize] as char);
+        out.push(HEX[(b & 0x0f) as usize] as char);
+    }
+    out
 }
 
 #[cfg(test)]
@@ -180,13 +188,12 @@ mod tests {
             )),
         };
         let result = convert_any_value(&value).unwrap();
-        if let AttributeValue::Array(arr) = result {
-            assert_eq!(arr.len(), 2);
-            assert_eq!(arr[0], AttributeValue::String("item1".to_string()));
-            assert_eq!(arr[1], AttributeValue::Int(42));
-        } else {
-            panic!("Expected array value");
-        }
+        let AttributeValue::Array(arr) = result else {
+            unreachable!("expected array value, got non-array variant");
+        };
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0], AttributeValue::String("item1".to_string()));
+        assert_eq!(arr[1], AttributeValue::Int(42));
     }
 
     #[test]
@@ -197,11 +204,10 @@ mod tests {
             )),
         };
         let result = convert_any_value(&value).unwrap();
-        if let AttributeValue::Array(arr) = result {
-            assert_eq!(arr.len(), 0);
-        } else {
-            panic!("Expected array value");
-        }
+        let AttributeValue::Array(arr) = result else {
+            unreachable!("expected array value, got non-array variant");
+        };
+        assert_eq!(arr.len(), 0);
     }
 
     #[test]
