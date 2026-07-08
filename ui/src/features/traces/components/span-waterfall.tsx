@@ -76,7 +76,7 @@ function SpanRow({
   const startOffset =
     ((node.start_time_unix_nano - minTime) / 1_000_000 / totalDuration) * 100;
   const width = (duration / totalDuration) * 100;
-  const hasError = node.status.code === "Error";
+  const hasError = node.status.code === "ERROR";
   const hasChildren = node.children.length > 0;
   const isExpanded = expanded.has(node.span_id);
 

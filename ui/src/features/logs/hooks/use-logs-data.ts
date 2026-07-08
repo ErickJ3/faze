@@ -1,5 +1,6 @@
 import { useLogs } from "@/hooks/api";
 import { useServices } from "@/hooks/api";
+import { SEVERITY_LEVEL_MAP } from "@/lib/constants";
 import { useQueryStates, parseAsString, parseAsInteger } from "nuqs";
 import { useMemo } from "react";
 
@@ -16,23 +17,35 @@ export function useLogsData() {
   const { data, isLoading, error, refetch } = useLogs({
     limit: 100,
     service: filters.service ?? undefined,
-    level: filters.level ?? undefined,
   });
 
   const services = servicesData ?? [];
   const allLogs = data ?? [];
 
   const filteredLogs = useMemo(() => {
-    if (!filters.search) return allLogs;
+    let result = allLogs;
 
-    const query = filters.search.toLowerCase();
-    return allLogs.filter((log) => {
-      return (
-        log.body.toLowerCase().includes(query) ||
-        log.service_name?.toLowerCase().includes(query)
+    if (filters.level) {
+      const level = filters.level;
+      result = result.filter(
+        (log) =>
+          log.severity_level &&
+          SEVERITY_LEVEL_MAP[log.severity_level] === level,
       );
-    });
-  }, [allLogs, filters.search]);
+    }
+
+    if (filters.search) {
+      const query = filters.search.toLowerCase();
+      result = result.filter((log) => {
+        return (
+          log.body.toLowerCase().includes(query) ||
+          log.service_name?.toLowerCase().includes(query)
+        );
+      });
+    }
+
+    return result;
+  }, [allLogs, filters.level, filters.search]);
 
   const totalItems = filteredLogs.length;
   const totalPages = Math.ceil(totalItems / filters.page_size);

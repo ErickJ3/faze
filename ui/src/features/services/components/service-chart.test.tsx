@@ -17,7 +17,7 @@ const mockTraces: TraceInfo[] = [
     has_errors: false,
     start_time: 1000000000000,
     root_span_name: "GET /api/users",
-    root_span_kind: "Server",
+    root_span_kind: "SERVER",
   },
   {
     trace_id: "trace-2",
@@ -27,7 +27,7 @@ const mockTraces: TraceInfo[] = [
     has_errors: true,
     start_time: 1000000001000,
     root_span_name: "SELECT users",
-    root_span_kind: "Client",
+    root_span_kind: "CLIENT",
   },
   {
     trace_id: "trace-3",
@@ -37,7 +37,7 @@ const mockTraces: TraceInfo[] = [
     has_errors: false,
     start_time: 1000000002000,
     root_span_name: "POST /api/login",
-    root_span_kind: "Server",
+    root_span_kind: "SERVER",
   },
 ];
 
@@ -74,7 +74,7 @@ describe("ServiceChart", () => {
         has_errors: false,
         start_time: undefined,
         root_span_name: "Invalid trace",
-        root_span_kind: "Internal",
+        root_span_kind: "INTERNAL",
       },
     ];
 
@@ -91,7 +91,7 @@ describe("ServiceChart", () => {
       has_errors: false,
       start_time: 1000000000000 + i * 1000,
       root_span_name: `Trace ${i}`,
-      root_span_kind: "Server",
+      root_span_kind: "SERVER",
     }));
 
     render(<ServiceChart traces={manyTraces} />);
@@ -134,7 +134,7 @@ describe("ServiceChart", () => {
         has_errors: false,
         start_time: 3000,
         root_span_name: "Third",
-        root_span_kind: "Server",
+        root_span_kind: "SERVER",
       },
       {
         trace_id: "trace-1",
@@ -143,7 +143,7 @@ describe("ServiceChart", () => {
         has_errors: false,
         start_time: 1000,
         root_span_name: "First",
-        root_span_kind: "Server",
+        root_span_kind: "SERVER",
       },
       {
         trace_id: "trace-2",
@@ -152,7 +152,7 @@ describe("ServiceChart", () => {
         has_errors: false,
         start_time: 2000,
         root_span_name: "Second",
-        root_span_kind: "Server",
+        root_span_kind: "SERVER",
       },
     ];
 

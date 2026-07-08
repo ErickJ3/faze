@@ -22,7 +22,7 @@ describe("Chart Navigation E2E", () => {
       has_errors: false,
       start_time: 1000000000000,
       root_span_name: "GET /api/users",
-      root_span_kind: "Server",
+      root_span_kind: "SERVER",
     },
     {
       trace_id: "trace-def456",
@@ -32,7 +32,7 @@ describe("Chart Navigation E2E", () => {
       has_errors: false,
       start_time: 1000000001000,
       root_span_name: "POST /auth/login",
-      root_span_kind: "Server",
+      root_span_kind: "SERVER",
     },
     {
       trace_id: "trace-ghi789",
@@ -42,7 +42,7 @@ describe("Chart Navigation E2E", () => {
       has_errors: true,
       start_time: 1000000002000,
       root_span_name: "SELECT * FROM users WHERE id = ?",
-      root_span_kind: "Client",
+      root_span_kind: "CLIENT",
     },
   ];
 
@@ -120,7 +120,7 @@ describe("Chart Navigation E2E", () => {
       has_errors: false,
       start_time: 1000000000000 + i * 1000,
       root_span_name: `Operation ${i}`,
-      root_span_kind: "Server",
+      root_span_kind: "SERVER",
     }));
 
     render(<ServiceChart traces={manyTraces} />);

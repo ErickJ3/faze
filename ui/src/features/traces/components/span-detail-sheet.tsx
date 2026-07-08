@@ -1,6 +1,5 @@
 import type { Span } from "@/types";
 import { formatTimestamp, formatNanoDuration } from "@/lib/formatters";
-import { SPAN_KIND_MAP } from "@/lib/constants";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { AttributesViewer } from "@/components/shared/attributes-viewer";
 import { CopyButton } from "@/components/shared/copy-button";
@@ -42,7 +41,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h4 className="text-xs text-foreground/50 mb-1">Kind</h4>
-              <p className="text-sm font-mono">{SPAN_KIND_MAP[span.kind]}</p>
+              <p className="text-sm font-mono">{span.kind}</p>
             </div>
 
             <div>

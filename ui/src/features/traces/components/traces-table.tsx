@@ -12,12 +12,12 @@ import {
 } from "@/components/ui/table";
 
 const SPAN_KIND_COLORS: Record<SpanKind, string> = {
-  Server: "bg-blue-500/10 text-blue-500",
-  Client: "bg-purple-500/10 text-purple-500",
-  Producer: "bg-green-500/10 text-green-500",
-  Consumer: "bg-yellow-500/10 text-yellow-500",
-  Internal: "bg-gray-500/10 text-gray-500",
-  Unspecified: "bg-gray-500/10 text-gray-500",
+  SERVER: "bg-blue-500/10 text-blue-500",
+  CLIENT: "bg-purple-500/10 text-purple-500",
+  PRODUCER: "bg-green-500/10 text-green-500",
+  CONSUMER: "bg-yellow-500/10 text-yellow-500",
+  INTERNAL: "bg-gray-500/10 text-gray-500",
+  UNSPECIFIED: "bg-gray-500/10 text-gray-500",
 };
 
 interface TracesTableProps {
