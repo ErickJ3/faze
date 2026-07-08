@@ -3,3 +3,4 @@ export * from "./use-logs";
 export * from "./use-metrics";
 export * from "./use-project";
 export * from "./use-services";
+export * from "./use-stats";

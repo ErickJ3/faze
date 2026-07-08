@@ -1,5 +1,9 @@
 import type { SeverityLevel } from "@/types";
 
+/// Duration thresholds (ms) for fast/medium/slow badge coloring.
+export const DURATION_FAST_MS = 100;
+export const DURATION_SLOW_MS = 500;
+
 /// Collapses the OTLP fine-grained levels (e.g. ERROR2..4) into display groups.
 export const SEVERITY_LEVEL_MAP: Record<SeverityLevel, string> = {
   UNSPECIFIED: "UNSPECIFIED",
