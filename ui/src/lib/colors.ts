@@ -1,33 +1,33 @@
 import type { SeverityLevel, StatusCode } from "@/types";
 
 export const severityColors: Record<string, string> = {
-  TRACE: "text-foreground/40",
-  DEBUG: "text-foreground/60",
-  INFO: "text-foreground",
-  WARN: "text-yellow-500",
-  ERROR: "text-red-500",
-  FATAL: "text-red-700",
+  TRACE: "text-sev-trace",
+  DEBUG: "text-sev-debug",
+  INFO: "text-sev-info",
+  WARN: "text-sev-warn",
+  ERROR: "text-sev-error",
+  FATAL: "text-sev-fatal",
 };
 
 export const severityBgColors: Record<string, string> = {
-  TRACE: "bg-foreground/5",
-  DEBUG: "bg-foreground/10",
-  INFO: "bg-blue-500/10",
-  WARN: "bg-yellow-500/10",
-  ERROR: "bg-red-500/10",
-  FATAL: "bg-red-700/20",
+  TRACE: "bg-sev-trace/10",
+  DEBUG: "bg-sev-debug/10",
+  INFO: "bg-sev-info/10",
+  WARN: "bg-sev-warn/10",
+  ERROR: "bg-sev-error/10",
+  FATAL: "bg-sev-fatal/15",
 };
 
 export const statusColors: Record<StatusCode, string> = {
-  UNSET: "text-foreground/40",
-  OK: "text-green-500",
-  ERROR: "text-red-500",
+  UNSET: "text-status-unset",
+  OK: "text-status-ok",
+  ERROR: "text-status-error",
 };
 
 export const statusBgColors: Record<StatusCode, string> = {
-  UNSET: "bg-foreground/5",
-  OK: "bg-green-500/10",
-  ERROR: "bg-red-500/10",
+  UNSET: "bg-status-unset/10",
+  OK: "bg-status-ok/10",
+  ERROR: "bg-status-error/10",
 };
 
 export function getSeverityColor(level: SeverityLevel): string {

@@ -14,7 +14,12 @@ interface TraceDetailsProps {
 }
 
 export function TraceDetails({ trace }: TraceDetailsProps) {
-  const { data: logs, isLoading: logsLoading } = useLogs({
+  const {
+    data: logs,
+    isLoading: logsLoading,
+    isError: logsError,
+    refetch: refetchLogs,
+  } = useLogs({
     trace_id: trace.trace_id,
   });
   const startTimes = trace.spans
@@ -32,29 +37,29 @@ export function TraceDetails({ trace }: TraceDetailsProps) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-lg font-mono mb-2">Trace Details</h2>
-        <div className="text-sm text-foreground/50 space-y-2">
+        <h1 className="text-lg font-mono mb-2">Trace Details</h1>
+        <div className="text-sm text-muted-foreground space-y-2">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-foreground/30">ID:</span>{" "}
+              <span className="text-muted-foreground">ID:</span>{" "}
               <span className="font-mono text-xs">{trace.trace_id}</span>
             </div>
             <CopyButton text={trace.trace_id} label="Copy ID" />
           </div>
           {trace.service_name && (
             <div>
-              <span className="text-foreground/30">Service:</span>{" "}
+              <span className="text-muted-foreground">Service:</span>{" "}
               <span className="font-mono">{trace.service_name}</span>
             </div>
           )}
           <div className="flex items-center gap-6">
             <div>
-              <span className="text-foreground/30">Spans:</span>{" "}
+              <span className="text-muted-foreground">Spans:</span>{" "}
               <span className="font-mono">{trace.spans.length}</span>
             </div>
             {durationMs !== null && (
               <div>
-                <span className="text-foreground/30">Duration:</span>{" "}
+                <span className="text-muted-foreground">Duration:</span>{" "}
                 <span className="font-mono">
                   {formatDurationCompact(durationMs)}
                 </span>
@@ -62,7 +67,7 @@ export function TraceDetails({ trace }: TraceDetailsProps) {
             )}
             {startTime !== null && (
               <div>
-                <span className="text-foreground/30">Started:</span>{" "}
+                <span className="text-muted-foreground">Started:</span>{" "}
                 <span className="font-mono">{formatDateTime(startTime)}</span>
               </div>
             )}
@@ -79,7 +84,7 @@ export function TraceDetails({ trace }: TraceDetailsProps) {
         <TabsContent value="waterfall" className="mt-4">
           {trace.spans.length === 0 ? (
             <div className="flex items-center justify-center h-32 border border-border">
-              <p className="text-sm text-foreground/50">
+              <p className="text-sm text-muted-foreground">
                 No spans recorded for this trace
               </p>
             </div>
@@ -89,7 +94,12 @@ export function TraceDetails({ trace }: TraceDetailsProps) {
         </TabsContent>
 
         <TabsContent value="logs" className="mt-4">
-          <TraceLogs logs={logs ?? []} isLoading={logsLoading} />
+          <TraceLogs
+            logs={logs ?? []}
+            isLoading={logsLoading}
+            isError={logsError}
+            onRetry={() => refetchLogs()}
+          />
         </TabsContent>
       </Tabs>
     </div>

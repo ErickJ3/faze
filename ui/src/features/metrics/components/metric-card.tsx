@@ -22,6 +22,18 @@ export function MetricCard({ metric }: MetricCardProps) {
         : "stable"
     : null;
 
+  const trendPct =
+    previousValue && previousValue.value !== 0
+      ? Math.abs(
+          ((latestValue.value - previousValue.value) / previousValue.value) *
+            100,
+        )
+      : null;
+
+  const trendLabel = trend
+    ? `Trend ${trend}${trendPct != null ? ` ${trendPct.toFixed(1)}%` : ""}`
+    : undefined;
+
   const distribution = latestValue.distribution;
 
   const sparklineData = useMemo(() => {
@@ -41,12 +53,12 @@ export function MetricCard({ metric }: MetricCardProps) {
   return (
     <div className="border border-border p-4 bg-card hover:bg-card/80 transition-colors">
       <div className="mb-3">
-        <div className="font-mono text-sm mb-1 truncate" title={metric.name}>
+        <h3 className="font-mono text-sm mb-1 truncate" title={metric.name}>
           {metric.name}
-        </div>
+        </h3>
         {metric.description && (
           <div
-            className="text-xs text-foreground/50 truncate"
+            className="text-xs text-muted-foreground truncate"
             title={metric.description}
           >
             {metric.description}
@@ -60,21 +72,27 @@ export function MetricCard({ metric }: MetricCardProps) {
             {formatNumber(latestValue.value)}
           </div>
           {metric.unit && (
-            <div className="text-xs text-foreground/50">{metric.unit}</div>
+            <div className="text-xs text-muted-foreground">{metric.unit}</div>
           )}
         </div>
 
         {trend && (
           <div
-            className={`text-xs font-mono ${
+            aria-label={trendLabel}
+            className={`flex items-center gap-1 text-xs font-mono ${
               trend === "up"
-                ? "text-green-500"
+                ? "text-status-ok"
                 : trend === "down"
-                  ? "text-red-500"
-                  : "text-foreground/50"
+                  ? "text-sev-error"
+                  : "text-muted-foreground"
             }`}
           >
-            {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"}
+            <span aria-hidden="true">
+              {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"}
+            </span>
+            {trendPct != null && (
+              <span aria-hidden="true">{trendPct.toFixed(1)}%</span>
+            )}
           </div>
         )}
       </div>
@@ -83,7 +101,7 @@ export function MetricCard({ metric }: MetricCardProps) {
         <DistributionChart distribution={distribution} />
       ) : (
         sparklineData && (
-          <div className="h-8 -mx-1">
+          <div className="h-8 -mx-1" aria-hidden="true">
             <svg width="100%" height="100%" preserveAspectRatio="none">
               <polyline
                 points={sparklineData.map((p) => `${p.x},${p.y}`).join(" ")}
@@ -100,11 +118,11 @@ export function MetricCard({ metric }: MetricCardProps) {
 
       <div className="flex items-center justify-between mt-2">
         {metric.service_name && (
-          <div className="text-xs text-foreground/30 truncate">
+          <div className="text-xs text-muted-foreground truncate">
             {metric.service_name}
           </div>
         )}
-        <div className="text-xs text-foreground/30 capitalize">
+        <div className="text-xs text-muted-foreground capitalize">
           {metric.metric_type.toLowerCase().replaceAll("_", " ")}
           {metric.metric_type === "SUM" &&
             metric.is_monotonic != null &&

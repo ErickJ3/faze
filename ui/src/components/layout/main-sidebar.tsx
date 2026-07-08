@@ -13,7 +13,7 @@ export function MainSidebar() {
         <span className="font-mono tracking-tight text-sm">Faze</span>
       </div>
 
-      <nav className="flex flex-col p-2 text-sm flex-1">
+      <nav aria-label="Main" className="flex flex-col p-2 text-sm flex-1">
         <Section title="Overview">
           <NavItem to="/" label="Dashboard" />
         </Section>
@@ -57,6 +57,7 @@ function NavItem({ to, label }: { to: string; label: string }) {
       className="
         px-2 py-1 flex items-center
         hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-inset
         transition-colors
       "
       activeProps={{

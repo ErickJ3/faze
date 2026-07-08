@@ -25,7 +25,7 @@ const MAX_EVENT_MARKERS = 50;
 function EmptyWaterfall({ message }: { message: string }) {
   return (
     <div className="flex items-center justify-center h-32 border border-border">
-      <p className="text-sm text-foreground/50">{message}</p>
+      <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }
@@ -69,10 +69,11 @@ function SpanRow({
         >
           {hasChildren ? (
             <button
+              type="button"
               onClick={() => onToggle(node.span_id)}
               aria-expanded={isExpanded}
               aria-label={`${isExpanded ? "Collapse" : "Expand"} ${node.name}`}
-              className="text-foreground/50 hover:text-foreground w-4 h-4 flex items-center justify-center shrink-0"
+              className="text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-4 h-4 flex items-center justify-center shrink-0"
             >
               {isExpanded ? (
                 <ChevronDown size={12} />
@@ -85,8 +86,9 @@ function SpanRow({
           )}
 
           <button
+            type="button"
             onClick={() => onSpanClick(node)}
-            className="flex-1 text-left min-w-0"
+            className="flex-1 text-left min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <div className="flex items-center gap-2">
               <span className="text-sm font-mono truncate">{node.name}</span>
@@ -96,25 +98,26 @@ function SpanRow({
                 </span>
               )}
               {showService && node.service_name && (
-                <span className="text-xs px-1 border border-border text-foreground/50 truncate shrink-0 max-w-32">
+                <span className="text-xs px-1 border border-border text-muted-foreground truncate shrink-0 max-w-32">
                   {node.service_name}
                 </span>
               )}
             </div>
           </button>
 
-          <span className="text-xs font-mono text-foreground/50 whitespace-nowrap">
+          <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">
             {formatDurationCompact(duration)}
           </span>
         </div>
 
         <div className="relative h-9">
           <button
+            type="button"
             onClick={() => onSpanClick(node)}
             aria-label={`${node.name}, ${formatDurationCompact(duration)}`}
             className={`absolute top-1/2 -translate-y-1/2 h-4 ${
               hasError ? "bg-destructive" : "bg-primary"
-            } hover:opacity-80 transition-opacity`}
+            } hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-opacity`}
             style={{
               left: `${startOffset}%`,
               width: `${Math.max(width, 0.5)}%`,
@@ -128,7 +131,7 @@ function SpanRow({
               <div
                 key={`${event.time_unix_nano}-${i.toString()}`}
                 title={event.name}
-                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-1.5 h-1.5 rotate-45 bg-amber-500 pointer-events-auto"
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-1.5 h-1.5 rotate-45 bg-sev-warn pointer-events-auto"
                 style={{
                   left: `${Math.min(Math.max(eventOffset, 0), 100)}%`,
                 }}
@@ -205,22 +208,26 @@ export function SpanWaterfall({ spans }: SpanWaterfallProps) {
               <span className="text-xs font-mono text-foreground/70">
                 Total: {formatDurationCompact(totalDuration)}
               </span>
-              <span className="text-xs text-foreground/50">
+              <span className="text-xs text-muted-foreground">
                 {spans.length} {spans.length === 1 ? "span" : "spans"}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={expandAll}
-                className="text-xs text-foreground/50 hover:text-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Expand All
               </button>
-              <span className="text-foreground/30">|</span>
+              <span className="text-muted-foreground" aria-hidden="true">
+                |
+              </span>
               <button
+                type="button"
                 onClick={collapseAll}
-                className="text-xs text-foreground/50 hover:text-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Collapse All
               </button>
@@ -229,11 +236,11 @@ export function SpanWaterfall({ spans }: SpanWaterfallProps) {
 
           <div className={`${GRID_COLS} border-b border-border bg-card/10`}>
             <div className="px-3 py-2">
-              <span className="text-xs font-mono text-foreground/50">
+              <span className="text-xs font-mono text-muted-foreground">
                 SPAN
               </span>
             </div>
-            <div className="relative py-2 text-xs font-mono text-foreground/50">
+            <div className="relative py-2 text-xs font-mono text-muted-foreground">
               {TICK_FRACTIONS.map((fraction) => (
                 <span
                   key={fraction}

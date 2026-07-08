@@ -1,3 +1,4 @@
+import { memo, useCallback, useMemo } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -17,40 +18,61 @@ const chartConfig = {
 
 const MINUTE_NANOS = 60 * 1_000_000_000;
 const DAY_NANOS = 24 * 60 * MINUTE_NANOS;
+const CHART_MARGIN = { top: 12, right: 4, left: -16 };
 
 interface TracesOverTimeChartProps {
   activity: ActivityBucket[];
 }
 
-export function TracesOverTimeChart({ activity }: TracesOverTimeChartProps) {
-  const data = activity.map((bucket) => ({
-    time: bucket.bucket_start_unix_nano,
-    ok: bucket.total - bucket.errors,
-    errors: bucket.errors,
-  }));
+export const TracesOverTimeChart = memo(function TracesOverTimeChart({
+  activity,
+}: TracesOverTimeChartProps) {
+  const data = useMemo(
+    () =>
+      activity.map((bucket) => ({
+        time: bucket.bucket_start_unix_nano,
+        ok: bucket.total - bucket.errors,
+        errors: bucket.errors,
+      })),
+    [activity],
+  );
 
-  const range =
-    data.length > 1 ? data[data.length - 1].time - data[0].time : 0;
-  const formatTick = (nano: number) => {
-    if (range > DAY_NANOS) return formatDateTime(nano).slice(0, 16);
-    // Sub-minute ranges need millisecond precision to tell ticks apart.
-    if (range < MINUTE_NANOS) return formatTimestamp(nano);
-    return formatTimestamp(nano).slice(0, 8);
-  };
+  const { totalOk, totalErrors, range } = useMemo(() => {
+    return {
+      totalOk: data.reduce((sum, d) => sum + d.ok, 0),
+      totalErrors: data.reduce((sum, d) => sum + d.errors, 0),
+      range: data.length > 1 ? data[data.length - 1].time - data[0].time : 0,
+    };
+  }, [data]);
+
+  const formatTick = useCallback(
+    (nano: number) => {
+      if (range > DAY_NANOS) return formatDateTime(nano).slice(0, 16);
+      // Sub-minute ranges need millisecond precision to tell ticks apart.
+      if (range < MINUTE_NANOS) return formatTimestamp(nano);
+      return formatTimestamp(nano).slice(0, 8);
+    },
+    [range],
+  );
 
   return (
     <div className="border border-border">
       <div className="px-4 py-3 border-b border-border">
-        <h3 className="text-sm font-mono">Trace Activity</h3>
+        <h2 className="text-sm font-mono">Trace Activity</h2>
       </div>
 
       {data.length === 0 ? (
         <div className="flex items-center justify-center h-48">
-          <p className="text-sm text-foreground/50">No trace activity yet</p>
+          <p className="text-sm text-muted-foreground">No trace activity yet</p>
         </div>
       ) : (
-        <ChartContainer config={chartConfig} className="w-full p-4 pt-2">
-          <BarChart data={data} margin={{ top: 12, right: 4, left: -16 }}>
+        <ChartContainer
+          config={chartConfig}
+          className="w-full p-4 pt-2"
+          role="img"
+          aria-label={`Trace activity over time: ${totalOk} successful and ${totalErrors} errored traces across ${data.length} time buckets.`}
+        >
+          <BarChart data={data} margin={CHART_MARGIN}>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="time"
@@ -84,4 +106,4 @@ export function TracesOverTimeChart({ activity }: TracesOverTimeChartProps) {
       )}
     </div>
   );
-}
+});

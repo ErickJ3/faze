@@ -23,59 +23,18 @@ export function CommandPalette() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // cmdk handles arrow-key navigation and Enter internally; we only own the
+    // Ctrl+K open/close toggle, so this listener registers once and stays stable.
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && e.ctrlKey && !e.metaKey) {
         e.preventDefault();
-        setOpen((open) => !open);
-      }
-
-      if (open) {
-        if (e.key === "h" && !e.metaKey && !e.ctrlKey) {
-          const input = document.querySelector(
-            "[cmdk-input]",
-          ) as HTMLInputElement;
-          if (document.activeElement !== input) {
-            e.preventDefault();
-            navigate({ to: "/", search: {} });
-            setOpen(false);
-          }
-        }
-        if (e.key === "j" && !e.metaKey && !e.ctrlKey) {
-          const input = document.querySelector(
-            "[cmdk-input]",
-          ) as HTMLInputElement;
-          if (document.activeElement !== input) {
-            e.preventDefault();
-            const items = document.querySelectorAll("[cmdk-item]");
-            const current = Array.from(items).findIndex(
-              (item) => item.getAttribute("data-selected") === "true",
-            );
-            if (current < items.length - 1) {
-              (items[current + 1] as HTMLElement).click();
-            }
-          }
-        }
-        if (e.key === "k" && !e.metaKey && !e.ctrlKey) {
-          const input = document.querySelector(
-            "[cmdk-input]",
-          ) as HTMLInputElement;
-          if (document.activeElement !== input) {
-            e.preventDefault();
-            const items = document.querySelectorAll("[cmdk-item]");
-            const current = Array.from(items).findIndex(
-              (item) => item.getAttribute("data-selected") === "true",
-            );
-            if (current > 0) {
-              (items[current - 1] as HTMLElement).click();
-            }
-          }
-        }
+        setOpen((prev) => !prev);
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [navigate, open]);
+  }, []);
 
   const handleSelect = (path: string) => {
     navigate({ to: path as any, search: {} as any });

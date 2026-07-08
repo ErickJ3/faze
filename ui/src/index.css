@@ -3,6 +3,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -66,6 +74,15 @@
   --shadow-opacity: var(--shadow-opacity);
   --color-shadow-color: var(--shadow-color);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-sev-trace: var(--sev-trace);
+  --color-sev-debug: var(--sev-debug);
+  --color-sev-info: var(--sev-info);
+  --color-sev-warn: var(--sev-warn);
+  --color-sev-error: var(--sev-error);
+  --color-sev-fatal: var(--sev-fatal);
+  --color-status-ok: var(--status-ok);
+  --color-status-error: var(--status-error);
+  --color-status-unset: var(--status-unset);
   --animate-highlight-pulse: highlight-pulse 1.5s ease-in-out 3;
 }
 
@@ -76,7 +93,7 @@
   --card-foreground: oklch(0.1448 0 0);
   --border: oklch(0.9219 0 0);
   --primary: oklch(0.7 0.15 160);
-  --primary-foreground: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.18 0 0);
   --radius: 0rem;
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.1448 0 0);
@@ -90,10 +107,10 @@
   --input: oklch(0.9219 0 0);
   --ring: oklch(0.709 0 0);
   --chart-1: oklch(0.7 0.15 160);
-  --chart-2: oklch(0.65 0.2 180);
-  --chart-3: oklch(0.6 0.18 200);
-  --chart-4: oklch(0.55 0.15 220);
-  --chart-5: oklch(0.5 0.12 240);
+  --chart-2: oklch(0.7 0.15 45);
+  --chart-3: oklch(0.6 0.18 265);
+  --chart-4: oklch(0.68 0.16 320);
+  --chart-5: oklch(0.72 0.14 200);
   --sidebar: oklch(0.9851 0 0);
   --sidebar-foreground: oklch(0.1448 0 0);
   --sidebar-primary: oklch(0.2046 0 0);
@@ -102,7 +119,16 @@
   --sidebar-accent-foreground: oklch(0.2046 0 0);
   --sidebar-border: oklch(0.9219 0 0);
   --sidebar-ring: oklch(0.709 0 0);
-  --destructive-foreground: oklch(0.9702 0 0);
+  --destructive-foreground: oklch(1 0 0);
+  --sev-trace: oklch(0.52 0 0);
+  --sev-debug: oklch(0.5 0 0);
+  --sev-info: oklch(0.52 0.15 250);
+  --sev-warn: oklch(0.55 0.13 70);
+  --sev-error: oklch(0.55 0.2 27);
+  --sev-fatal: oklch(0.48 0.2 18);
+  --status-ok: oklch(0.52 0.15 155);
+  --status-error: oklch(0.55 0.2 27);
+  --status-unset: oklch(0.52 0 0);
   --font-sans: Geist Mono, monospace;
   --font-serif: Geist Mono, monospace;
   --font-mono: Geist Mono, monospace;
@@ -136,8 +162,8 @@
   --card-foreground: oklch(0.9851 0 0);
   --popover: oklch(0.2686 0 0);
   --popover-foreground: oklch(0.9851 0 0);
-  --primary: oklch(0.5555 0 0);
-  --primary-foreground: oklch(0.9851 0 0);
+  --primary: oklch(0.68 0.15 160);
+  --primary-foreground: oklch(0.18 0 0);
   --secondary: oklch(0.2686 0 0);
   --secondary-foreground: oklch(0.9851 0 0);
   --muted: oklch(0.2686 0 0);
@@ -148,11 +174,11 @@
   --border: oklch(0.3407 0 0);
   --input: oklch(0.4386 0 0);
   --ring: oklch(0.5555 0 0);
-  --chart-1: oklch(0.65 0.15 160);
-  --chart-2: oklch(0.6 0.2 180);
-  --chart-3: oklch(0.55 0.18 200);
-  --chart-4: oklch(0.5 0.15 220);
-  --chart-5: oklch(0.45 0.12 240);
+  --chart-1: oklch(0.72 0.15 160);
+  --chart-2: oklch(0.75 0.15 45);
+  --chart-3: oklch(0.7 0.16 265);
+  --chart-4: oklch(0.74 0.16 320);
+  --chart-5: oklch(0.76 0.14 200);
   --sidebar: oklch(0.2046 0 0);
   --sidebar-foreground: oklch(0.9851 0 0);
   --sidebar-primary: oklch(0.9851 0 0);
@@ -162,6 +188,15 @@
   --sidebar-border: oklch(1 0 0);
   --sidebar-ring: oklch(0.4386 0 0);
   --destructive-foreground: oklch(0.2686 0 0);
+  --sev-trace: oklch(0.65 0 0);
+  --sev-debug: oklch(0.709 0 0);
+  --sev-info: oklch(0.72 0.14 250);
+  --sev-warn: oklch(0.8 0.13 75);
+  --sev-error: oklch(0.7 0.18 25);
+  --sev-fatal: oklch(0.66 0.2 15);
+  --status-ok: oklch(0.74 0.16 155);
+  --status-error: oklch(0.7 0.18 25);
+  --status-unset: oklch(0.65 0 0);
   --radius: 0rem;
   --font-sans: Geist Mono, monospace;
   --font-serif: Geist Mono, monospace;

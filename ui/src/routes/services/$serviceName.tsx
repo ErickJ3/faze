@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServiceDetails } from "@/features/services/hooks/use-service-details";
 import { QueryBoundary } from "@/components/shared/query-boundary";
+import { DetailPageSkeleton } from "@/components/shared/page-skeletons";
 import { ServiceOverview } from "@/features/services/components/service-overview";
 import { ServiceChart } from "@/features/services/components/service-chart";
 import { ServiceTraces } from "@/features/services/components/service-traces";
@@ -31,12 +32,14 @@ function ServiceDetailPage() {
       isLoading={isLoading}
       error={error}
       onRetry={() => refetch()}
+      errorTitle="Couldn't load service"
+      loadingFallback={<DetailPageSkeleton />}
     >
       <div>
         <div className="mb-6">
           <Link
             to="/services"
-            className="text-xs text-foreground/50 hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Back to services
           </Link>
@@ -44,7 +47,7 @@ function ServiceDetailPage() {
 
         <div className="mb-6">
           <h1 className="text-2xl font-mono">{decodedServiceName}</h1>
-          <p className="text-sm text-foreground/50 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Service overview and metrics
           </p>
         </div>

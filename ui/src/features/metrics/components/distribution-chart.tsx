@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -11,6 +12,9 @@ import type { Distribution } from "@/types";
 const chartConfig = {
   count: { label: "Count", color: "var(--chart-1)" },
 } satisfies ChartConfig;
+
+const CHART_MARGIN = { top: 4, right: 4, left: -24 };
+const AXIS_TICK = { fontSize: 10 };
 
 interface DistributionChartProps {
   distribution: Distribution;
@@ -59,21 +63,27 @@ function exponentialBuckets(
 }
 
 function BucketBarChart({ data }: { data: BucketDatum[] }) {
+  const total = data.reduce((sum, d) => sum + d.count, 0);
   return (
-    <ChartContainer config={chartConfig} className="w-full h-32">
-      <BarChart data={data} margin={{ top: 4, right: 4, left: -24 }}>
+    <ChartContainer
+      config={chartConfig}
+      className="w-full h-32"
+      role="img"
+      aria-label={`Value distribution across ${data.length} buckets, ${total} total observations.`}
+    >
+      <BarChart data={data} margin={CHART_MARGIN}>
         <XAxis
           dataKey="bucket"
           tickLine={false}
           axisLine={false}
           interval="preserveStartEnd"
-          tick={{ fontSize: 10 }}
+          tick={AXIS_TICK}
         />
         <YAxis
           tickLine={false}
           axisLine={false}
           allowDecimals={false}
-          tick={{ fontSize: 10 }}
+          tick={AXIS_TICK}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
         <Bar dataKey="count" fill="var(--color-count)" radius={0} />
@@ -82,7 +92,9 @@ function BucketBarChart({ data }: { data: BucketDatum[] }) {
   );
 }
 
-export function DistributionChart({ distribution }: DistributionChartProps) {
+export const DistributionChart = memo(function DistributionChart({
+  distribution,
+}: DistributionChartProps) {
   switch (distribution.kind) {
     case "HISTOGRAM": {
       const data = histogramBuckets(
@@ -119,7 +131,7 @@ export function DistributionChart({ distribution }: DistributionChartProps) {
                 i > 0 ? "border-t border-border" : ""
               }`}
             >
-              <span className="text-foreground/50">
+              <span className="text-muted-foreground">
                 p{Math.round(qv.quantile * 100)}
               </span>
               <span>{formatNumber(qv.value)}</span>
@@ -129,4 +141,4 @@ export function DistributionChart({ distribution }: DistributionChartProps) {
       );
     }
   }
-}
+});

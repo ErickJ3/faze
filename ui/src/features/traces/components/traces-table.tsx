@@ -12,12 +12,12 @@ import {
 } from "@/components/ui/table";
 
 const SPAN_KIND_COLORS: Record<SpanKind, string> = {
-  SERVER: "bg-blue-500/10 text-blue-500",
-  CLIENT: "bg-purple-500/10 text-purple-500",
-  PRODUCER: "bg-green-500/10 text-green-500",
-  CONSUMER: "bg-yellow-500/10 text-yellow-500",
-  INTERNAL: "bg-gray-500/10 text-gray-500",
-  UNSPECIFIED: "bg-gray-500/10 text-gray-500",
+  SERVER: "bg-chart-3/10 text-chart-3",
+  CLIENT: "bg-chart-4/10 text-chart-4",
+  PRODUCER: "bg-chart-1/10 text-chart-1",
+  CONSUMER: "bg-chart-2/10 text-chart-2",
+  INTERNAL: "bg-muted text-muted-foreground",
+  UNSPECIFIED: "bg-muted text-muted-foreground",
 };
 
 interface TracesTableProps {
@@ -31,8 +31,8 @@ export function TracesTable({ traces }: TracesTableProps) {
     return (
       <div className="flex items-center justify-center h-64 border border-border">
         <div className="text-center">
-          <p className="text-foreground/50 text-sm">No traces found</p>
-          <p className="text-foreground/30 text-xs mt-1">
+          <p className="text-muted-foreground text-sm">No traces found</p>
+          <p className="text-muted-foreground text-xs mt-1">
             Adjust filters or start sending traces
           </p>
         </div>
@@ -54,16 +54,26 @@ export function TracesTable({ traces }: TracesTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {traces.map((trace) => (
+          {traces.map((trace) => {
+            const openTrace = () =>
+              navigate({
+                to: "/traces/$traceId",
+                params: { traceId: trace.trace_id },
+              });
+            return (
             <TableRow
               key={trace.trace_id}
-              className="cursor-pointer hover:bg-card/50"
-              onClick={() =>
-                navigate({
-                  to: "/traces/$traceId",
-                  params: { traceId: trace.trace_id },
-                })
-              }
+              role="link"
+              tabIndex={0}
+              aria-label={`View trace ${trace.root_span_name || "unknown"}`}
+              className="cursor-pointer hover:bg-card/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+              onClick={openTrace}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openTrace();
+                }
+              }}
             >
               <TableCell>
                 <div className="flex flex-col gap-1">
@@ -79,7 +89,7 @@ export function TracesTable({ traces }: TracesTableProps) {
                       {trace.root_span_name || "unknown"}
                     </span>
                   </div>
-                  <span className="font-mono text-xs text-foreground/50">
+                  <span className="font-mono text-xs text-muted-foreground">
                     {trace.trace_id.substring(0, 16)}...
                   </span>
                 </div>
@@ -90,26 +100,27 @@ export function TracesTable({ traces }: TracesTableProps) {
               <TableCell className="text-right">
                 <DurationBadge durationMs={trace.duration_ms} />
               </TableCell>
-              <TableCell className="text-right font-mono text-sm text-foreground/70">
+              <TableCell className="text-right font-mono text-sm text-muted-foreground">
                 {trace.span_count}
               </TableCell>
               <TableCell className="text-center">
                 {trace.has_errors && (
-                  <span className="text-xs px-2 py-0.5 bg-red-500/10 text-red-500">
+                  <span className="text-xs px-2 py-0.5 bg-status-error/10 text-status-error">
                     ERROR
                   </span>
                 )}
                 {!trace.has_errors && (
-                  <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-500">
+                  <span className="text-xs px-2 py-0.5 bg-status-ok/10 text-status-ok">
                     OK
                   </span>
                 )}
               </TableCell>
-              <TableCell className="font-mono text-xs text-foreground/50">
+              <TableCell className="font-mono text-xs text-muted-foreground">
                 {trace.start_time ? formatRelativeTime(trace.start_time) : "-"}
               </TableCell>
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </div>

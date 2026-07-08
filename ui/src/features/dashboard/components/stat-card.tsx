@@ -7,9 +7,9 @@ interface StatCardProps {
 export function StatCard({ label, value, hint }: StatCardProps) {
   return (
     <div className="border border-border p-4 bg-card">
-      <div className="text-xs text-foreground/50 mb-2">{label}</div>
+      <h2 className="text-xs text-muted-foreground mb-2 font-normal">{label}</h2>
       <div className="text-2xl font-mono">{value}</div>
-      {hint && <div className="text-xs text-foreground/40 mt-1">{hint}</div>}
+      {hint && <div className="text-xs text-muted-foreground mt-1">{hint}</div>}
     </div>
   );
 }

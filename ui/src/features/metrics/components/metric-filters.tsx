@@ -21,7 +21,7 @@ export function MetricFilters({
     <div className="flex gap-3 mb-4">
       <div className="w-48">
         <Select value={selectedService} onValueChange={onServiceChange}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Filter by service">
             <SelectValue placeholder="All services" />
           </SelectTrigger>
           <SelectContent>

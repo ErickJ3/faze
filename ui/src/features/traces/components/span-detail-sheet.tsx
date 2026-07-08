@@ -46,30 +46,30 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
 
         <div className="space-y-4 p-6">
           <div>
-            <h4 className="text-xs text-foreground/50 mb-1">Name</h4>
+            <h4 className="text-xs text-muted-foreground mb-1">Name</h4>
             <p className="text-sm font-mono">{span.name}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h4 className="text-xs text-foreground/50 mb-1">Kind</h4>
+              <h4 className="text-xs text-muted-foreground mb-1">Kind</h4>
               <p className="text-sm font-mono">{span.kind}</p>
             </div>
 
             <div>
-              <h4 className="text-xs text-foreground/50 mb-1">Status</h4>
+              <h4 className="text-xs text-muted-foreground mb-1">Status</h4>
               <StatusBadge status={span.status.code} />
             </div>
           </div>
 
           <div>
-            <h4 className="text-xs text-foreground/50 mb-1">Duration</h4>
+            <h4 className="text-xs text-muted-foreground mb-1">Duration</h4>
             <p className="text-sm font-mono">{duration}</p>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h4 className="text-xs text-foreground/50">Span ID</h4>
+              <h4 className="text-xs text-muted-foreground">Span ID</h4>
               <CopyButton text={span.span_id} label="Copy" />
             </div>
             <p className="text-xs font-mono text-foreground/70 break-all">
@@ -79,7 +79,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h4 className="text-xs text-foreground/50">Trace ID</h4>
+              <h4 className="text-xs text-muted-foreground">Trace ID</h4>
               <CopyButton text={span.trace_id} label="Copy" />
             </div>
             <p className="text-xs font-mono text-foreground/70 break-all">
@@ -90,7 +90,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
           {span.parent_span_id && (
             <div>
               <div className="flex items-center justify-between mb-1">
-                <h4 className="text-xs text-foreground/50">Parent Span ID</h4>
+                <h4 className="text-xs text-muted-foreground">Parent Span ID</h4>
                 <CopyButton text={span.parent_span_id} label="Copy" />
               </div>
               <p className="text-xs font-mono text-foreground/70 break-all">
@@ -101,21 +101,21 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
 
           {span.service_name && (
             <div>
-              <h4 className="text-xs text-foreground/50 mb-1">Service</h4>
+              <h4 className="text-xs text-muted-foreground mb-1">Service</h4>
               <p className="text-sm font-mono">{span.service_name}</p>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h4 className="text-xs text-foreground/50 mb-1">Start Time</h4>
+              <h4 className="text-xs text-muted-foreground mb-1">Start Time</h4>
               <p className="text-xs font-mono text-foreground/70">
                 {formatTimestamp(span.start_time_unix_nano)}
               </p>
             </div>
 
             <div>
-              <h4 className="text-xs text-foreground/50 mb-1">End Time</h4>
+              <h4 className="text-xs text-muted-foreground mb-1">End Time</h4>
               <p className="text-xs font-mono text-foreground/70">
                 {formatTimestamp(span.end_time_unix_nano)}
               </p>
@@ -124,7 +124,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
 
           {span.status.message && (
             <div>
-              <h4 className="text-xs text-foreground/50 mb-1">
+              <h4 className="text-xs text-muted-foreground mb-1">
                 Status Message
               </h4>
               <p className="text-sm font-mono text-red-500">
@@ -135,7 +135,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
 
           {span.trace_state && (
             <div>
-              <h4 className="text-xs text-foreground/50 mb-1">Trace State</h4>
+              <h4 className="text-xs text-muted-foreground mb-1">Trace State</h4>
               <p className="text-xs font-mono text-foreground/70 break-all">
                 {span.trace_state}
               </p>
@@ -144,7 +144,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
 
           {droppedCounts.length > 0 && (
             <div>
-              <h4 className="text-xs text-foreground/50 mb-1">Dropped</h4>
+              <h4 className="text-xs text-muted-foreground mb-1">Dropped</h4>
               <p className="text-xs font-mono text-amber-500">
                 {droppedCounts
                   .map((entry) => `${entry.count} ${entry.label}`)
@@ -185,7 +185,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
                       <span className="text-sm font-mono break-all">
                         {event.name}
                       </span>
-                      <span className="text-xs font-mono text-foreground/50 shrink-0">
+                      <span className="text-xs font-mono text-muted-foreground shrink-0">
                         +
                         {formatNanoDuration(
                           span.start_time_unix_nano,
@@ -193,7 +193,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
                         )}
                       </span>
                     </div>
-                    <p className="text-xs font-mono text-foreground/50">
+                    <p className="text-xs font-mono text-muted-foreground">
                       {formatTimestamp(event.time_unix_nano)}
                     </p>
                     {event.attributes &&
@@ -221,7 +221,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
                     className="border border-border p-3 space-y-2"
                   >
                     <div>
-                      <h4 className="text-xs text-foreground/50 mb-1">
+                      <h4 className="text-xs text-muted-foreground mb-1">
                         Linked Trace
                       </h4>
                       <Link
@@ -233,7 +233,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
                       </Link>
                     </div>
                     <div>
-                      <h4 className="text-xs text-foreground/50 mb-1">
+                      <h4 className="text-xs text-muted-foreground mb-1">
                         Linked Span
                       </h4>
                       <p className="text-xs font-mono text-foreground/70 break-all">
@@ -241,7 +241,7 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
                       </p>
                     </div>
                     {link.trace_state && (
-                      <p className="text-xs font-mono text-foreground/50 break-all">
+                      <p className="text-xs font-mono text-muted-foreground break-all">
                         trace_state: {link.trace_state}
                       </p>
                     )}
@@ -261,13 +261,13 @@ export function SpanDetailSheet({ span, open, onClose }: SpanDetailSheetProps) {
               <TabsContent value="resource" className="mt-4 space-y-4">
                 {span.scope && (
                   <div>
-                    <h4 className="text-xs text-foreground/50 mb-1">
+                    <h4 className="text-xs text-muted-foreground mb-1">
                       Instrumentation Scope
                     </h4>
                     <p className="text-sm font-mono">
                       {span.scope.name}
                       {span.scope.version && (
-                        <span className="text-foreground/50">
+                        <span className="text-muted-foreground">
                           {" "}
                           v{span.scope.version}
                         </span>

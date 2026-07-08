@@ -9,8 +9,8 @@ export function ServicesList({ services }: ServicesListProps) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-foreground/50 text-sm">No services found</p>
-          <p className="text-foreground/30 text-xs mt-1">
+          <p className="text-muted-foreground text-sm">No services found</p>
+          <p className="text-muted-foreground text-xs mt-1">
             Start sending telemetry data to see services
           </p>
         </div>

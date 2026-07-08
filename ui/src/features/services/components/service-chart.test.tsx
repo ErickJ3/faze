@@ -44,7 +44,9 @@ const mockTraces: TraceInfo[] = [
 describe("ServiceChart", () => {
   it("renders empty state when no traces provided", () => {
     render(<ServiceChart traces={[]} />);
-    expect(screen.getByText("No data available")).toBeInTheDocument();
+    expect(
+      screen.getByText("No response-time data yet for this service"),
+    ).toBeInTheDocument();
   });
 
   it("renders chart with trace data", () => {

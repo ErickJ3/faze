@@ -12,7 +12,7 @@ export function Topbar() {
       className="
         h-12 flex items-center px-4
         border-b border-border
-        bg-background/80 backdrop-blur
+        bg-background
       "
     >
       <div className="text-sm text-muted-foreground font-mono">

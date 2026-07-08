@@ -10,8 +10,8 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
     return (
       <div className="flex items-center justify-center h-64 border border-border">
         <div className="text-center">
-          <p className="text-foreground/50 text-sm">No metrics found</p>
-          <p className="text-foreground/30 text-xs mt-1">
+          <p className="text-muted-foreground text-sm">No metrics found</p>
+          <p className="text-muted-foreground text-xs mt-1">
             Adjust filters or start sending metrics
           </p>
         </div>

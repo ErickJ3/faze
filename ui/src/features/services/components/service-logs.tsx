@@ -13,7 +13,7 @@ export function ServiceLogs({ logs, serviceName }: ServiceLogsProps) {
     return (
       <div className="border border-border p-6">
         <h2 className="text-lg font-mono mb-4">Recent Logs</h2>
-        <p className="text-sm text-foreground/50">
+        <p className="text-sm text-muted-foreground">
           No logs found for this service
         </p>
       </div>
@@ -27,7 +27,7 @@ export function ServiceLogs({ logs, serviceName }: ServiceLogsProps) {
         <Link
           to="/logs"
           search={{ service: serviceName }}
-          className="text-xs text-foreground/50 hover:text-foreground transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           View all →
         </Link>
@@ -49,7 +49,7 @@ export function ServiceLogs({ logs, serviceName }: ServiceLogsProps) {
                       {log.severity_level}
                     </span>
                   )}
-                  <span className="text-xs text-foreground/50">
+                  <span className="text-xs text-muted-foreground">
                     {formatRelativeTime(log.time_unix_nano)}
                   </span>
                 </div>

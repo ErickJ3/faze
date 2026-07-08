@@ -64,7 +64,7 @@ export function AttributesViewer({
   const entries = Object.entries(attributes);
 
   if (entries.length === 0) {
-    return <div className="text-xs text-foreground/30 py-2">No attributes</div>;
+    return <div className="text-xs text-muted-foreground py-2">No attributes</div>;
   }
 
   const toggleExpand = (key: string) => {
@@ -79,7 +79,7 @@ export function AttributesViewer({
 
   return (
     <div>
-      <h4 className="text-xs font-mono text-foreground/50 mb-2">{title}</h4>
+      <h4 className="text-xs font-mono text-muted-foreground mb-2">{title}</h4>
       <div className="border border-border">
         {entries.map(([key, value], index) => {
           const isExpanded = expandedKeys.has(key);
@@ -99,23 +99,27 @@ export function AttributesViewer({
                     <span className="text-xs font-mono text-foreground/70 break-all">
                       {key}
                     </span>
-                    <span className="text-xs text-foreground/30">
+                    <span className="text-xs text-muted-foreground">
                       {valueType}
                     </span>
                   </div>
                   <div className="text-xs font-mono text-foreground mt-1">
                     {expandable && !isExpanded ? (
                       <button
+                        type="button"
+                        aria-expanded={false}
                         onClick={() => toggleExpand(key)}
-                        className="text-foreground/50 hover:text-foreground"
+                        className="text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         {collapsedLabel} (click to expand)
                       </button>
                     ) : expandable && isExpanded ? (
                       <div>
                         <button
+                          type="button"
+                          aria-expanded={true}
                           onClick={() => toggleExpand(key)}
-                          className="text-foreground/50 hover:text-foreground mb-1"
+                          className="text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring mb-1"
                         >
                           (click to collapse)
                         </button>

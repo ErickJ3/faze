@@ -11,7 +11,7 @@ export function RecentTraces({ traces }: RecentTracesProps) {
   if (traces.length === 0) {
     return (
       <div className="border border-border p-8 text-center">
-        <p className="text-sm text-foreground/50">No recent traces</p>
+        <p className="text-sm text-muted-foreground">No recent traces</p>
       </div>
     );
   }
@@ -19,7 +19,7 @@ export function RecentTraces({ traces }: RecentTracesProps) {
   return (
     <div className="border border-border">
       <div className="px-4 py-3 border-b border-border">
-        <h3 className="text-sm font-mono">Recent Traces</h3>
+        <h2 className="text-sm font-mono">Recent Traces</h2>
       </div>
 
       <div className="divide-y divide-border">
@@ -34,7 +34,7 @@ export function RecentTraces({ traces }: RecentTracesProps) {
               <div className="font-mono text-sm truncate">
                 {trace.service_name || "unknown"}
               </div>
-              <div className="text-xs text-foreground/50">
+              <div className="text-xs text-muted-foreground">
                 {trace.start_time ? formatRelativeTime(trace.start_time) : "-"}
               </div>
             </div>
@@ -53,7 +53,7 @@ export function RecentTraces({ traces }: RecentTracesProps) {
         <Link
           to="/traces"
           search={{ service: undefined }}
-          className="text-xs text-foreground/50 hover:text-foreground transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           View all traces →
         </Link>

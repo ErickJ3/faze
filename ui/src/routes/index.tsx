@@ -16,11 +16,11 @@ function EmptyDashboard() {
   return (
     <div className="border border-border p-12 text-center">
       <h2 className="text-lg font-mono mb-2">No data yet</h2>
-      <p className="text-sm text-foreground/50 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Point your OpenTelemetry exporter at faze to start collecting traces,
         logs, and metrics.
       </p>
-      <div className="inline-block text-left text-xs font-mono text-foreground/70 bg-card border border-border p-4">
+      <div className="inline-block text-left text-xs font-mono text-muted-foreground bg-card border border-border p-4">
         <div>OTLP gRPC: localhost:4317</div>
         <div>OTLP HTTP: localhost:4318</div>
       </div>
@@ -41,7 +41,7 @@ function DashboardPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-mono mb-1">Dashboard</h1>
-        <p className="text-sm text-foreground/50">
+        <p className="text-sm text-muted-foreground">
           Overview of your observability data
         </p>
       </div>
@@ -50,6 +50,7 @@ function DashboardPage() {
         isLoading={isLoading}
         error={error}
         onRetry={refetch}
+        errorTitle="Couldn't load dashboard data"
         loadingFallback={<DashboardSkeleton />}
       >
         {stats && stats.traces.total === 0 ? (
