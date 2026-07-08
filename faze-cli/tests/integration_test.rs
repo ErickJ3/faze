@@ -30,6 +30,7 @@ fn create_test_otlp_span(
         trace_id: trace_id.to_vec(),
         span_id: span_id.to_vec(),
         trace_state: String::new(),
+        flags: 0,
         parent_span_id: vec![],
         name: name.to_string(),
         kind: OtlpSpanKind::Server as i32,

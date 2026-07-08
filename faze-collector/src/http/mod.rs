@@ -629,6 +629,59 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_export_traces_otlp_json_sdk_fields() {
+        // Real SDK payloads include span/link `flags` and may carry fields
+        // newer than our vendored protos; both must decode.
+        let storage = Arc::new(Storage::new_in_memory().unwrap());
+        let app = create_router(storage.clone());
+
+        let json_body = r#"{
+            "resourceSpans": [{
+                "resource": {
+                    "attributes": [{
+                        "key": "service.name",
+                        "value": {"stringValue": "sdk-service"}
+                    }],
+                    "someFutureResourceField": []
+                },
+                "scopeSpans": [{
+                    "spans": [{
+                        "traceId": "0102030405060708090a0b0c0d0e0f10",
+                        "spanId": "0102030405060708",
+                        "name": "sdk-span",
+                        "kind": 1,
+                        "flags": 256,
+                        "startTimeUnixNano": "1000",
+                        "endTimeUnixNano": "2000",
+                        "links": [{
+                            "traceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                            "spanId": "bbbbbbbbbbbbbbbb",
+                            "flags": 1
+                        }],
+                        "someFutureSpanField": "ignored"
+                    }]
+                }]
+            }]
+        }"#;
+
+        let request = Request::builder()
+            .uri("/v1/traces")
+            .method("POST")
+            .header("content-type", "application/json")
+            .body(Body::from(json_body))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let trace = storage
+            .get_trace_by_id("0102030405060708090a0b0c0d0e0f10")
+            .unwrap();
+        assert_eq!(trace.spans[0].name, "sdk-span");
+        assert_eq!(trace.spans[0].links[0].span_id, "bb".repeat(8));
+    }
+
+    #[tokio::test]
     async fn test_export_logs_otlp_json() {
         let storage = Arc::new(Storage::new_in_memory().unwrap());
         let app = create_router(storage.clone());

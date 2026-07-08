@@ -20,10 +20,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &["proto"],
         )?;
 
-    // Serde impls for OTLP/JSON support on the HTTP collector.
+    // Serde impls for OTLP/JSON support on the HTTP collector. Unknown fields
+    // are skipped (matching protobuf wire semantics) so payloads from newer
+    // SDKs never fail to decode.
     let descriptor_set = std::fs::read(descriptor_path)?;
     pbjson_build::Builder::new()
         .register_descriptors(&descriptor_set)?
+        .ignore_unknown_fields()
         .build(&[".opentelemetry", ".google.rpc"])?;
 
     Ok(())

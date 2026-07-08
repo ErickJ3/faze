@@ -286,12 +286,14 @@ mod tests {
                 trace_id: vec![0xaa; 16],
                 span_id: vec![0xbb; 8],
                 trace_state: "vendor=1".to_string(),
+                flags: 0,
                 attributes: vec![],
                 dropped_attributes_count: 0,
             }],
             dropped_links_count: 3,
             status: None,
             trace_state: "vendor=2".to_string(),
+            flags: 0,
         };
 
         let result = convert_span(&span, &test_resource_ctx(), None);
@@ -389,6 +391,7 @@ mod tests {
                 message: String::new(),
             }),
             trace_state: String::new(),
+            flags: 0,
         };
 
         let result = convert_span(&span, &test_resource_ctx(), None);
@@ -414,6 +417,7 @@ mod tests {
             dropped_links_count: 0,
             status: None,
             trace_state: String::new(),
+            flags: 0,
         };
 
         let result = convert_span(&span, &test_resource_ctx(), None);
@@ -455,6 +459,7 @@ mod tests {
                 message: String::new(),
             }),
             trace_state: String::new(),
+            flags: 0,
         };
 
         let result = convert_span(&span, &test_resource_ctx(), None);
@@ -493,6 +498,7 @@ mod tests {
                         dropped_links_count: 0,
                         status: None,
                         trace_state: String::new(),
+                        flags: 0,
                     }],
                     schema_url: String::new(),
                 },
@@ -514,6 +520,7 @@ mod tests {
                         dropped_links_count: 0,
                         status: None,
                         trace_state: String::new(),
+                        flags: 0,
                     }],
                     schema_url: String::new(),
                 },
@@ -560,6 +567,7 @@ mod tests {
                         dropped_links_count: 0,
                         status: None,
                         trace_state: String::new(),
+                        flags: 0,
                     }],
                     schema_url: String::new(),
                 }],
@@ -593,6 +601,7 @@ mod tests {
                         dropped_links_count: 0,
                         status: None,
                         trace_state: String::new(),
+                        flags: 0,
                     }],
                     schema_url: String::new(),
                 }],
@@ -635,6 +644,7 @@ mod tests {
                     dropped_links_count: 0,
                     status: None,
                     trace_state: String::new(),
+                    flags: 0,
                 }],
                 schema_url: String::new(),
             }],

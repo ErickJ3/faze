@@ -26,6 +26,8 @@ message Span {
   bytes span_id = 2;
   string trace_state = 3;
   bytes parent_span_id = 4;
+  // W3C trace flags plus parent-context bits; SDKs send this routinely.
+  fixed32 flags = 16;
   string name = 5;
   SpanKind kind = 6;
   fixed64 start_time_unix_nano = 7;
@@ -61,6 +63,8 @@ message Link {
   string trace_state = 3;
   repeated opentelemetry.proto.common.v1.KeyValue attributes = 4;
   uint32 dropped_attributes_count = 5;
+  // W3C trace flags of the linked span context.
+  fixed32 flags = 6;
 }
 
 message Status {
