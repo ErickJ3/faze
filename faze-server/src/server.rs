@@ -1,6 +1,6 @@
 use crate::{
     routes::{
-        AppState, get_project_info, get_trace, health_check, list_logs, list_metrics,
+        AppState, get_project_info, get_stats, get_trace, health_check, list_logs, list_metrics,
         list_services, list_traces,
     },
     ui,
@@ -42,6 +42,7 @@ impl ApiServer {
             .route("/api/logs", get(list_logs))
             .route("/api/services", get(list_services))
             .route("/api/metrics", get(list_metrics))
+            .route("/api/stats", get(get_stats))
             .layer(CorsLayer::permissive())
             .with_state(state)
             .fallback(ui::fallback_service())
@@ -72,6 +73,7 @@ impl ApiServer {
             "  List services: http://localhost:{}/api/services",
             self.port
         );
+        info!("  Stats:         http://localhost:{}/api/stats", self.port);
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
         axum::serve(listener, app).await?;
@@ -192,5 +194,38 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_stats_endpoint() {
+        let storage = Storage::new_in_memory().unwrap();
+        let span = Span::new(
+            "span1".to_string(),
+            "trace1".to_string(),
+            None,
+            "test".to_string(),
+            SpanKind::Server,
+            1_000_000_000,
+            2_000_000_000,
+            Attributes::new(),
+            Status::ok(),
+            Some("test-service".to_string()),
+        );
+        storage.insert_span(&span).unwrap();
+
+        let server = ApiServer::new(storage, 0);
+        let app = server.build_router();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/stats")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
     }
 }
