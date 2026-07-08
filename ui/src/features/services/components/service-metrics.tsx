@@ -12,7 +12,7 @@ export function ServiceMetrics({ metrics, serviceName }: ServiceMetricsProps) {
     return (
       <div className="border border-border p-6">
         <h2 className="text-lg font-mono mb-4">Metrics</h2>
-        <p className="text-sm text-foreground/50">
+        <p className="text-sm text-muted-foreground">
           No metrics found for this service
         </p>
       </div>
@@ -26,7 +26,7 @@ export function ServiceMetrics({ metrics, serviceName }: ServiceMetricsProps) {
         <Link
           to="/metrics"
           search={{ service: serviceName }}
-          className="text-xs text-foreground/50 hover:text-foreground transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           View all →
         </Link>
@@ -40,7 +40,7 @@ export function ServiceMetrics({ metrics, serviceName }: ServiceMetricsProps) {
           return (
             <div key={index} className="border border-border p-3">
               <div
-                className="text-xs text-foreground/50 mb-1 truncate"
+                className="text-xs text-muted-foreground mb-1 truncate"
                 title={metric.name}
               >
                 {metric.name}
@@ -48,7 +48,7 @@ export function ServiceMetrics({ metrics, serviceName }: ServiceMetricsProps) {
               <div className="text-lg font-mono">
                 {latestValue != null ? formatNumber(latestValue) : "-"}
               </div>
-              <div className="text-xs text-foreground/30 mt-1 capitalize">
+              <div className="text-xs text-muted-foreground mt-1 capitalize">
                 {metric.metric_type.toLowerCase()}
               </div>
             </div>

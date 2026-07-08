@@ -76,7 +76,9 @@ describe("Chart Navigation E2E", () => {
     render(<ServiceChart traces={[]} />);
 
     expect(screen.getByText("Response Time")).toBeInTheDocument();
-    expect(screen.getByText("No data available")).toBeInTheDocument();
+    expect(
+      screen.getByText("No response-time data yet for this service"),
+    ).toBeInTheDocument();
   });
 
   it("should calculate correct average duration", () => {

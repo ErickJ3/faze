@@ -35,6 +35,7 @@ export function TraceFilters({
       <div className="flex-1 min-w-[300px]">
         <Input
           type="text"
+          aria-label="Search by trace ID or span name"
           placeholder="Search by trace ID or span name..."
           value={searchQuery ?? ""}
           onChange={(e) => onSearchChange(e.target.value || undefined)}
@@ -43,7 +44,7 @@ export function TraceFilters({
 
       <div className="w-48">
         <Select value={selectedService} onValueChange={onServiceChange}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Filter by service">
             <SelectValue placeholder="All services" />
           </SelectTrigger>
           <SelectContent>
@@ -60,6 +61,7 @@ export function TraceFilters({
       <div className="w-32">
         <Input
           type="number"
+          aria-label="Minimum duration in milliseconds"
           placeholder="Min (ms)"
           value={minDuration ?? ""}
           onChange={(e) =>
@@ -73,6 +75,7 @@ export function TraceFilters({
       <div className="w-32">
         <Input
           type="number"
+          aria-label="Maximum duration in milliseconds"
           placeholder="Max (ms)"
           value={maxDuration ?? ""}
           onChange={(e) =>

@@ -33,6 +33,7 @@ export function LogFilters({
       <div className="flex-1 min-w-[300px]">
         <Input
           type="text"
+          aria-label="Search log body"
           placeholder="Search log body..."
           value={searchQuery ?? ""}
           onChange={(e) => onSearchChange(e.target.value || undefined)}
@@ -41,7 +42,7 @@ export function LogFilters({
 
       <div className="w-48">
         <Select value={selectedService} onValueChange={onServiceChange}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Filter by service">
             <SelectValue placeholder="All services" />
           </SelectTrigger>
           <SelectContent>
@@ -57,7 +58,7 @@ export function LogFilters({
 
       <div className="w-32">
         <Select value={selectedLevel} onValueChange={onLevelChange}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Filter by level">
             <SelectValue placeholder="All levels" />
           </SelectTrigger>
           <SelectContent>

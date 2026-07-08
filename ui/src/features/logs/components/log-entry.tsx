@@ -10,7 +10,7 @@ export function LogEntry({ log }: LogEntryProps) {
   return (
     <div className="py-3 px-4 border-b border-border hover:bg-card/30 transition-colors font-mono">
       <div className="flex items-start gap-3 mb-1">
-        <span className="text-xs text-foreground/40 min-w-[100px]">
+        <span className="text-xs text-muted-foreground min-w-[100px]">
           {formatTimestamp(log.time_unix_nano)}
         </span>
         <SeverityBadge level={log.severity_level} />
@@ -20,14 +20,14 @@ export function LogEntry({ log }: LogEntryProps) {
           </span>
         )}
         {log.service_name && (
-          <span className="text-xs text-foreground/50">{log.service_name}</span>
+          <span className="text-xs text-muted-foreground">{log.service_name}</span>
         )}
       </div>
 
       <div className="text-sm text-foreground pl-[100px]">{log.body}</div>
 
       {(log.trace_id || log.observed_time_unix_nano) && (
-        <div className="text-xs text-foreground/30 pl-[100px] mt-1 flex gap-3">
+        <div className="text-xs text-muted-foreground pl-[100px] mt-1 flex gap-3">
           {log.trace_id && <span>trace: {log.trace_id.substring(0, 16)}...</span>}
           {log.observed_time_unix_nano && (
             <span>observed: {formatTimestamp(log.observed_time_unix_nano)}</span>

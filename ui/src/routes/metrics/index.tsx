@@ -4,6 +4,7 @@ import { MetricsGrid } from "@/features/metrics/components/metrics-grid";
 import { MetricFilters } from "@/features/metrics/components/metric-filters";
 import { useMetricsData } from "@/features/metrics/hooks/use-metrics-data";
 import { QueryBoundary } from "@/components/shared/query-boundary";
+import { GridPageSkeleton } from "@/components/shared/page-skeletons";
 
 export const Route = createFileRoute("/metrics/")({
   component: MetricsPage,
@@ -25,6 +26,8 @@ function MetricsPage() {
       isLoading={isLoading}
       error={error}
       onRetry={() => refetch()}
+      errorTitle="Couldn't load metrics"
+      loadingFallback={<GridPageSkeleton filters={1} />}
     >
       <div>
         <MetricsHeader count={metrics.length} />

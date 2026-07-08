@@ -4,6 +4,7 @@ import { TracesTable } from "@/features/traces/components/traces-table";
 import { TraceFilters } from "@/features/traces/components/trace-filters";
 import { useTracesData } from "@/features/traces/hooks/use-traces-data";
 import { QueryBoundary } from "@/components/shared/query-boundary";
+import { ListPageSkeleton } from "@/components/shared/page-skeletons";
 import { Pagination } from "@/components/shared/pagination";
 
 export const Route = createFileRoute("/traces/")({
@@ -33,6 +34,8 @@ function TracesPage() {
       isLoading={isLoading}
       error={error}
       onRetry={() => refetch()}
+      errorTitle="Couldn't load traces"
+      loadingFallback={<ListPageSkeleton filters={4} />}
     >
       <div>
         <TracesHeader total={total} />

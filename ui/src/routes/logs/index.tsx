@@ -4,6 +4,7 @@ import { LogsList } from "@/features/logs/components/logs-list";
 import { LogFilters } from "@/features/logs/components/log-filters";
 import { useLogsData } from "@/features/logs/hooks/use-logs-data";
 import { QueryBoundary } from "@/components/shared/query-boundary";
+import { ListPageSkeleton } from "@/components/shared/page-skeletons";
 import { Pagination } from "@/components/shared/pagination";
 
 export const Route = createFileRoute("/logs/")({
@@ -27,6 +28,8 @@ function LogsPage() {
       isLoading={isLoading}
       error={error}
       onRetry={() => refetch()}
+      errorTitle="Couldn't load logs"
+      loadingFallback={<ListPageSkeleton filters={3} />}
     >
       <div>
         <LogsHeader count={pagination.totalItems} />

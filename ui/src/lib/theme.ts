@@ -10,6 +10,9 @@ export function getTheme(): Theme {
     if (stored === "light" || stored === "dark") {
       return stored;
     }
+    if (window.matchMedia?.("(prefers-color-scheme: light)").matches) {
+      return "light";
+    }
   } catch (err) {
     console.error("Failed to load theme:", err);
   }

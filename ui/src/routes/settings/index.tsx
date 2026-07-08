@@ -8,6 +8,7 @@ import {
 } from "@/lib/settings";
 import { useToast } from "@/components/shared/toast-provider";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -42,7 +43,7 @@ function SettingsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-mono mb-1">Settings</h1>
-        <p className="text-sm text-foreground/50">
+        <p className="text-sm text-muted-foreground">
           Configure application preferences
         </p>
       </div>
@@ -59,14 +60,14 @@ function SettingsPage() {
                 onChange={(e) =>
                   setSettings({ ...settings, autoRefresh: e.target.checked })
                 }
-                className="w-4 h-4"
+                className="w-4 h-4 accent-primary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
               <span className="text-sm">Enable auto-refresh</span>
             </label>
 
             {settings.autoRefresh && (
               <div>
-                <label className="text-xs text-foreground/50 block mb-2">
+                <label className="text-xs text-muted-foreground block mb-2">
                   Refresh Interval (seconds)
                 </label>
                 <Input
@@ -95,7 +96,7 @@ function SettingsPage() {
                   onFocus={(e) => e.target.select()}
                   className="w-32"
                 />
-                <p className="text-xs text-foreground/30 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Data will refresh every {settings.refreshInterval / 1000}{" "}
                   seconds
                 </p>
@@ -109,26 +110,22 @@ function SettingsPage() {
 
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-foreground/50 mb-3">
+              <p className="text-sm text-muted-foreground mb-3">
                 Restore all settings to their defaults
               </p>
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setResetDialogOpen(true)}
-                className="text-sm border border-destructive text-destructive px-4 py-2 hover:bg-destructive/10 transition-colors"
+                className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 Reset Settings
-              </button>
+              </Button>
             </div>
           </div>
         </section>
 
         <div className="flex gap-3">
-          <button
-            onClick={handleSave}
-            className="text-sm border border-border px-4 py-2 hover:bg-card transition-colors"
-          >
-            Save Changes
-          </button>
+          <Button onClick={handleSave}>Save Changes</Button>
         </div>
       </div>
 
@@ -144,18 +141,12 @@ function SettingsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <button
-              onClick={() => setResetDialogOpen(false)}
-              className="text-sm border border-border px-4 py-2 hover:bg-card transition-colors"
-            >
+            <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
               Cancel
-            </button>
-            <button
-              onClick={handleReset}
-              className="text-sm border border-destructive text-destructive px-4 py-2 hover:bg-destructive/10 transition-colors"
-            >
+            </Button>
+            <Button variant="destructive" onClick={handleReset}>
               Reset
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

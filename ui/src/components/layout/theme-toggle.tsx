@@ -12,11 +12,11 @@ export function ThemeToggle() {
   return (
     <button
       onClick={handleToggle}
-      className="text-xs border border-border px-2 py-1 hover:bg-card transition-colors font-mono"
+      className="text-xs border border-border px-2 py-1 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors font-mono"
       title="Toggle theme"
-      aria-label="Toggle theme"
+      aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
     >
-      {theme === "dark" ? "☀" : "☾"}
+      <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
     </button>
   );
 }

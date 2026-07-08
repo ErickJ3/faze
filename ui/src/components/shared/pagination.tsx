@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -24,11 +26,14 @@ export function Pagination({
     <div className="flex items-center justify-between border-t border-border pt-3 mt-4">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-foreground/50">Rows per page:</span>
+          <label htmlFor="rows-per-page" className="text-xs text-muted-foreground">
+            Rows per page:
+          </label>
           <select
+            id="rows-per-page"
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="text-xs bg-background border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring"
+            className="text-xs bg-background border border-border px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {PAGE_SIZES.map((size) => (
               <option key={size} value={size}>
@@ -38,43 +43,51 @@ export function Pagination({
           </select>
         </div>
 
-        <span className="text-xs text-foreground/50">
+        <span className="text-xs text-muted-foreground">
           {startItem}-{endItem} of {totalItems}
         </span>
       </div>
 
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
-          className="text-xs px-2 py-1 border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-card/50"
+          aria-label="First page"
         >
           First
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="text-xs px-2 py-1 border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-card/50"
+          aria-label="Previous page"
         >
           Previous
-        </button>
-        <span className="text-xs px-2 text-foreground/70">
+        </Button>
+        <span className="text-xs px-2 text-muted-foreground">
           Page {currentPage} of {totalPages}
         </span>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="text-xs px-2 py-1 border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-card/50"
+          aria-label="Next page"
         >
           Next
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
-          className="text-xs px-2 py-1 border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-card/50"
+          aria-label="Last page"
         >
           Last
-        </button>
+        </Button>
       </div>
     </div>
   );

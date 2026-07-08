@@ -20,6 +20,12 @@ interface ChartDataPoint {
   trace: TraceInfo;
 }
 
+const chartConfig = {
+  duration: {
+    label: "Response Time",
+  },
+} satisfies ChartConfig;
+
 export function ServiceChart({ traces }: ServiceChartProps) {
   const navigate = useNavigate();
 
@@ -58,12 +64,6 @@ export function ServiceChart({ traces }: ServiceChartProps) {
     return Math.max(...validTraces.map((t) => t.duration_ms));
   }, [traces]);
 
-  const chartConfig = {
-    duration: {
-      label: "Response Time",
-    },
-  } satisfies ChartConfig;
-
   const handleBarClick = (data: ChartDataPoint) => {
     if (data?.trace?.trace_id) {
       navigate({ to: `/traces/${data.trace.trace_id}` });
@@ -74,7 +74,9 @@ export function ServiceChart({ traces }: ServiceChartProps) {
     return (
       <div className="border border-border p-6">
         <h2 className="text-lg font-mono mb-4">Response Time</h2>
-        <p className="text-sm text-foreground/50">No data available</p>
+        <p className="text-sm text-muted-foreground">
+          No response-time data yet for this service
+        </p>
       </div>
     );
   }
@@ -85,13 +87,13 @@ export function ServiceChart({ traces }: ServiceChartProps) {
         <h2 className="text-lg font-mono">Response Time</h2>
         <div className="flex items-center gap-4 text-xs">
           <div>
-            <span className="text-foreground/50">Avg:</span>{" "}
+            <span className="text-muted-foreground">Avg:</span>{" "}
             <span className="font-mono">
               {formatDurationCompact(avgDuration)}
             </span>
           </div>
           <div>
-            <span className="text-foreground/50">Max:</span>{" "}
+            <span className="text-muted-foreground">Max:</span>{" "}
             <span className="font-mono">
               {formatDurationCompact(maxDuration)}
             </span>
@@ -99,7 +101,12 @@ export function ServiceChart({ traces }: ServiceChartProps) {
         </div>
       </div>
 
-      <ChartContainer config={chartConfig} className="h-32 w-full">
+      <ChartContainer
+        config={chartConfig}
+        className="h-32 w-full"
+        role="img"
+        aria-label={`Response time bar chart of the last ${chartData.length} traces. Average ${formatDurationCompact(avgDuration)}, maximum ${formatDurationCompact(maxDuration)}. Use the traces table to open a trace.`}
+      >
         <BarChart
           data={chartData}
           onClick={(data) => {
@@ -110,7 +117,13 @@ export function ServiceChart({ traces }: ServiceChartProps) {
           className="cursor-pointer"
         >
           <XAxis dataKey="name" hide />
-          <YAxis hide />
+          <YAxis
+            width={44}
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 10 }}
+            tickFormatter={(value) => formatDurationCompact(Number(value))}
+          />
           <ChartTooltip
             content={({ active, payload }) => {
               if (!active || !payload || !payload.length) return null;
@@ -126,8 +139,8 @@ export function ServiceChart({ traces }: ServiceChartProps) {
                         className="w-2 h-2 rounded-sm"
                         style={{
                           backgroundColor: data.hasErrors
-                            ? "hsl(var(--destructive))"
-                            : "hsl(var(--chart-2))",
+                            ? "var(--destructive)"
+                            : "var(--chart-2)",
                         }}
                       />
                       <span className="font-medium">
@@ -163,18 +176,14 @@ export function ServiceChart({ traces }: ServiceChartProps) {
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${String(index)}`}
-                fill={
-                  entry.hasErrors
-                    ? "hsl(var(--destructive))"
-                    : "hsl(var(--chart-2))"
-                }
+                fill={entry.hasErrors ? "var(--destructive)" : "var(--chart-2)"}
               />
             ))}
           </Bar>
         </BarChart>
       </ChartContainer>
 
-      <div className="mt-2 text-xs text-foreground/50 text-center">
+      <div className="mt-2 text-xs text-muted-foreground text-center">
         Last {chartData.length} traces
       </div>
     </div>

@@ -1,23 +1,27 @@
+import { Button } from "@/components/ui/button";
+
 interface ErrorStateProps {
+  title?: string;
   message?: string;
   onRetry?: () => void;
 }
 
-export function ErrorState({ message, onRetry }: ErrorStateProps) {
+export function ErrorState({
+  title = "Something went wrong",
+  message,
+  onRetry,
+}: ErrorStateProps) {
   return (
-    <div className="flex items-center justify-center h-64">
+    <div role="alert" className="flex items-center justify-center h-64">
       <div className="text-center">
-        <p className="text-red-500 text-sm mb-2">Error loading data</p>
+        <p className="text-sev-error text-sm mb-2">{title}</p>
         {message && (
-          <p className="text-foreground/30 text-xs mb-3">{message}</p>
+          <p className="text-muted-foreground text-xs mb-3">{message}</p>
         )}
         {onRetry && (
-          <button
-            onClick={onRetry}
-            className="text-xs border border-border px-3 py-1 hover:bg-card transition-colors"
-          >
+          <Button variant="outline" size="sm" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         )}
       </div>
     </div>

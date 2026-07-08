@@ -9,12 +9,22 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   return (
     <div className="flex h-screen w-screen bg-background text-foreground">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:border focus:border-border focus:bg-card focus:px-3 focus:py-2 focus:font-mono focus:text-sm"
+      >
+        Skip to content
+      </a>
       <MainSidebar />
 
       <div className="flex flex-col flex-1 border-l border-border">
         <Topbar />
 
-        <main className="flex-1 overflow-auto p-4">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 overflow-auto p-4 outline-none"
+        >
           {children || <Outlet />}
         </main>
       </div>

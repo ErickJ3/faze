@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useToast } from "./toast-provider";
+import { Button } from "@/components/ui/button";
 
 interface CopyButtonProps {
   text: string;
@@ -23,11 +24,14 @@ export function CopyButton({ text, label = "Copy" }: CopyButtonProps) {
   };
 
   return (
-    <button
+    <Button
+      variant="outline"
+      size="sm"
       onClick={handleCopy}
-      className="text-xs border border-border px-2 py-1 hover:bg-card transition-colors font-mono"
+      aria-label={label}
+      className="font-mono text-xs"
     >
       {copied ? "✓ Copied" : label}
-    </button>
+    </Button>
   );
 }

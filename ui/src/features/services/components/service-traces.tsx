@@ -12,7 +12,7 @@ export function ServiceTraces({ traces, serviceName }: ServiceTracesProps) {
     return (
       <div className="border border-border p-6">
         <h2 className="text-lg font-mono mb-4">Recent Traces</h2>
-        <p className="text-sm text-foreground/50">
+        <p className="text-sm text-muted-foreground">
           No traces found for this service
         </p>
       </div>
@@ -26,7 +26,7 @@ export function ServiceTraces({ traces, serviceName }: ServiceTracesProps) {
         <Link
           to="/traces"
           search={{ service: serviceName }}
-          className="text-xs text-foreground/50 hover:text-foreground transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           View all →
         </Link>
@@ -52,7 +52,7 @@ export function ServiceTraces({ traces, serviceName }: ServiceTracesProps) {
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-foreground/50 font-mono">
+                <div className="text-xs text-muted-foreground font-mono">
                   {trace.trace_id.substring(0, 16)}...
                 </div>
               </div>
@@ -62,11 +62,11 @@ export function ServiceTraces({ traces, serviceName }: ServiceTracesProps) {
                   <div className="text-sm font-mono">
                     {formatDurationCompact(trace.duration_ms)}
                   </div>
-                  <div className="text-xs text-foreground/50">
+                  <div className="text-xs text-muted-foreground">
                     {trace.span_count} spans
                   </div>
                 </div>
-                <div className="text-xs text-foreground/50 w-20">
+                <div className="text-xs text-muted-foreground w-20">
                   {trace.start_time
                     ? formatRelativeTime(trace.start_time)
                     : "-"}

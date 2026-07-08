@@ -18,10 +18,10 @@ export function ServiceCard({ name }: ServiceCardProps) {
       "
     >
       <div className="flex items-center justify-between">
-        <span className="font-mono text-sm">{name}</span>
+        <h2 className="font-mono text-sm font-normal">{name}</h2>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-primary rounded-full" />
-          <span className="text-xs text-foreground/50">active</span>
+          <span className="text-xs text-muted-foreground">active</span>
         </div>
       </div>
     </Link>
