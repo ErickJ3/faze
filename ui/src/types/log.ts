@@ -41,5 +41,6 @@ export interface Log {
 export interface LogFilters {
   service?: string;
   level?: string;
+  trace_id?: string;
   limit?: number;
 }

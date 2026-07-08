@@ -22,6 +22,8 @@ pub struct ListTracesQuery {
 pub struct ListLogsQuery {
     /// Filter by service name
     pub service: Option<String>,
+    /// Return only logs correlated with this trace (ignores other filters)
+    pub trace_id: Option<String>,
     /// Maximum number of results
     pub limit: Option<usize>,
 }

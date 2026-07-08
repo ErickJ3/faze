@@ -76,6 +76,11 @@ pub async fn list_logs(
 ) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/logs - params: {:?}", params);
 
+    if let Some(trace_id) = params.trace_id.as_deref() {
+        let logs = state.storage.get_logs_by_trace_id(trace_id)?;
+        return Ok(Json(logs));
+    }
+
     let limit = params.limit.unwrap_or(100).min(1000);
     let logs = state
         .storage
@@ -475,6 +480,39 @@ mod tests {
 
         let query = ListLogsQuery {
             service: None,
+            trace_id: None,
+            limit: None,
+        };
+
+        let response = list_logs(State(state), Query(query)).await.into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_list_logs_by_trace_id() {
+        use faze::models::{Log, SeverityLevel};
+
+        let storage = Storage::new_in_memory().unwrap();
+        let log = Log::new(
+            1_000_000_000,
+            SeverityLevel::Info,
+            None,
+            "correlated log".to_string(),
+            Attributes::new(),
+            Some("trace1".to_string()),
+            Some("span1".to_string()),
+            Some("test-service".to_string()),
+        );
+        storage.insert_log(&log).unwrap();
+
+        let state = AppState {
+            storage: Arc::new(storage),
+        };
+
+        let query = ListLogsQuery {
+            service: None,
+            trace_id: Some("trace1".to_string()),
             limit: None,
         };
 

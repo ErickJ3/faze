@@ -63,6 +63,25 @@ impl Storage {
         Ok(logs)
     }
 
+    /// Get all logs correlated with a trace, oldest first
+    #[allow(clippy::significant_drop_tightening)]
+    pub fn get_logs_by_trace_id(&self, trace_id: &str) -> Result<Vec<Log>> {
+        let conn = self.lock()?;
+        let mut stmt = conn.prepare(
+            "SELECT time_unix_nano, severity_level, severity_text, body,
+                    attributes, trace_id, span_id, service_name
+               FROM logs
+              WHERE trace_id = ?1
+              ORDER BY time_unix_nano",
+        )?;
+
+        let logs = stmt
+            .query_map([trace_id], log_from_row)?
+            .collect::<SqliteResult<Vec<_>>>()?;
+
+        Ok(logs)
+    }
+
     /// Get count of logs
     pub fn count_logs(&self) -> Result<i64> {
         self.count_rows("logs")
@@ -93,5 +112,39 @@ mod tests {
 
         assert_eq!(logs.len(), 1);
         assert_eq!(logs[0].body, "Test log");
+    }
+
+    #[test]
+    fn test_get_logs_by_trace_id() {
+        let storage = Storage::new_in_memory().unwrap();
+        let make_log = |time: i64, body: &str, trace_id: Option<&str>| {
+            Log::new(
+                time,
+                SeverityLevel::Info,
+                None,
+                body.to_string(),
+                Attributes::new(),
+                trace_id.map(String::from),
+                None,
+                Some("test-service".to_string()),
+            )
+        };
+
+        storage
+            .insert_logs(&[
+                make_log(3_000, "late", Some("trace1")),
+                make_log(1_000, "early", Some("trace1")),
+                make_log(2_000, "other trace", Some("trace2")),
+                make_log(4_000, "uncorrelated", None),
+            ])
+            .unwrap();
+
+        let logs = storage.get_logs_by_trace_id("trace1").unwrap();
+
+        assert_eq!(logs.len(), 2);
+        assert_eq!(logs[0].body, "early");
+        assert_eq!(logs[1].body, "late");
+
+        assert!(storage.get_logs_by_trace_id("missing").unwrap().is_empty());
     }
 }

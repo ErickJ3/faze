@@ -1,6 +1,9 @@
 import type { Trace } from "@/types";
 import { SpanWaterfall } from "./span-waterfall";
+import { TraceLogs } from "./trace-logs";
 import { CopyButton } from "@/components/shared/copy-button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLogs } from "@/hooks/api";
 import {
   formatDurationCompact,
   formatDateTime,
@@ -11,6 +14,9 @@ interface TraceDetailsProps {
 }
 
 export function TraceDetails({ trace }: TraceDetailsProps) {
+  const { data: logs, isLoading: logsLoading } = useLogs({
+    trace_id: trace.trace_id,
+  });
   const startTimes = trace.spans
     .map((s) => s.start_time_unix_nano)
     .filter((t) => t > 0);
@@ -64,15 +70,28 @@ export function TraceDetails({ trace }: TraceDetailsProps) {
         </div>
       </div>
 
-      {trace.spans.length === 0 ? (
-        <div className="flex items-center justify-center h-32 border border-border">
-          <p className="text-sm text-foreground/50">
-            No spans recorded for this trace
-          </p>
-        </div>
-      ) : (
-        <SpanWaterfall key={trace.trace_id} spans={trace.spans} />
-      )}
+      <Tabs defaultValue="waterfall">
+        <TabsList>
+          <TabsTrigger value="waterfall">Waterfall</TabsTrigger>
+          <TabsTrigger value="logs">Logs ({logs?.length ?? 0})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="waterfall" className="mt-4">
+          {trace.spans.length === 0 ? (
+            <div className="flex items-center justify-center h-32 border border-border">
+              <p className="text-sm text-foreground/50">
+                No spans recorded for this trace
+              </p>
+            </div>
+          ) : (
+            <SpanWaterfall key={trace.trace_id} spans={trace.spans} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="logs" className="mt-4">
+          <TraceLogs logs={logs ?? []} isLoading={logsLoading} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
