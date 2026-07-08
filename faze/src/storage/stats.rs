@@ -200,8 +200,22 @@ mod tests {
         // trace1: two spans, 100ms total, ok
         storage
             .insert_spans(&[
-                create_span("s1", "trace1", 1_000_000_000, 1_050_000_000, Status::ok(), "svc-a"),
-                create_span("s2", "trace1", 1_020_000_000, 1_100_000_000, Status::ok(), "svc-a"),
+                create_span(
+                    "s1",
+                    "trace1",
+                    1_000_000_000,
+                    1_050_000_000,
+                    Status::ok(),
+                    "svc-a",
+                ),
+                create_span(
+                    "s2",
+                    "trace1",
+                    1_020_000_000,
+                    1_100_000_000,
+                    Status::ok(),
+                    "svc-a",
+                ),
             ])
             .unwrap();
         // trace2: one span, 300ms, error
@@ -279,7 +293,14 @@ mod tests {
     fn test_trace_time_buckets_single_trace() {
         let storage = Storage::new_in_memory().unwrap();
         storage
-            .insert_spans(&[create_span("s1", "trace1", 5_000, 6_000, Status::ok(), "svc")])
+            .insert_spans(&[create_span(
+                "s1",
+                "trace1",
+                5_000,
+                6_000,
+                Status::ok(),
+                "svc",
+            )])
             .unwrap();
 
         let buckets = storage.trace_time_buckets(5).unwrap();

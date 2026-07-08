@@ -14,8 +14,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use thiserror::Error;
 
 pub use db_path::{detect_project_root, get_data_dir, get_project_db_path};
-pub use stats::{ServiceStat, TraceStats, TraceTimeBucket};
 use schema::init_schema;
+pub use stats::{ServiceStat, TraceStats, TraceTimeBucket};
 
 /// Errors returned by [`Storage`] operations.
 #[derive(Debug, Error)]
