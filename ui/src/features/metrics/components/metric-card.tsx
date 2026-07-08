@@ -1,6 +1,7 @@
 import type { Metric } from "@/types";
 import { formatNumber } from "@/lib/formatters";
 import { useMemo } from "react";
+import { DistributionChart } from "./distribution-chart";
 
 interface MetricCardProps {
   metric: Metric;
@@ -20,6 +21,8 @@ export function MetricCard({ metric }: MetricCardProps) {
         ? "down"
         : "stable"
     : null;
+
+  const distribution = latestValue.distribution;
 
   const sparklineData = useMemo(() => {
     if (metric.data_points.length < 2) return null;
@@ -76,19 +79,23 @@ export function MetricCard({ metric }: MetricCardProps) {
         )}
       </div>
 
-      {sparklineData && (
-        <div className="h-8 -mx-1">
-          <svg width="100%" height="100%" preserveAspectRatio="none">
-            <polyline
-              points={sparklineData.map((p) => `${p.x},${p.y}`).join(" ")}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-primary"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-        </div>
+      {distribution ? (
+        <DistributionChart distribution={distribution} />
+      ) : (
+        sparklineData && (
+          <div className="h-8 -mx-1">
+            <svg width="100%" height="100%" preserveAspectRatio="none">
+              <polyline
+                points={sparklineData.map((p) => `${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-primary"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+          </div>
+        )
       )}
 
       <div className="flex items-center justify-between mt-2">
@@ -98,7 +105,10 @@ export function MetricCard({ metric }: MetricCardProps) {
           </div>
         )}
         <div className="text-xs text-foreground/30 capitalize">
-          {metric.metric_type.toLowerCase()}
+          {metric.metric_type.toLowerCase().replaceAll("_", " ")}
+          {metric.metric_type === "SUM" &&
+            metric.is_monotonic != null &&
+            (metric.is_monotonic ? " · monotonic" : " · non-monotonic")}
         </div>
       </div>
     </div>

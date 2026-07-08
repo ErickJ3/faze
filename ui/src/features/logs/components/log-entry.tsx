@@ -14,6 +14,11 @@ export function LogEntry({ log }: LogEntryProps) {
           {formatTimestamp(log.time_unix_nano)}
         </span>
         <SeverityBadge level={log.severity_level} />
+        {log.event_name && (
+          <span className="text-xs px-1 border border-border text-foreground/60">
+            {log.event_name}
+          </span>
+        )}
         {log.service_name && (
           <span className="text-xs text-foreground/50">{log.service_name}</span>
         )}
@@ -21,9 +26,12 @@ export function LogEntry({ log }: LogEntryProps) {
 
       <div className="text-sm text-foreground pl-[100px]">{log.body}</div>
 
-      {log.trace_id && (
-        <div className="text-xs text-foreground/30 pl-[100px] mt-1">
-          trace: {log.trace_id.substring(0, 16)}...
+      {(log.trace_id || log.observed_time_unix_nano) && (
+        <div className="text-xs text-foreground/30 pl-[100px] mt-1 flex gap-3">
+          {log.trace_id && <span>trace: {log.trace_id.substring(0, 16)}...</span>}
+          {log.observed_time_unix_nano && (
+            <span>observed: {formatTimestamp(log.observed_time_unix_nano)}</span>
+          )}
         </div>
       )}
     </div>

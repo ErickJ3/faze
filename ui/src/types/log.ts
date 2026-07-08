@@ -1,4 +1,4 @@
-import type { Attributes } from "./common";
+import type { Attributes, InstrumentationScope } from "./common";
 
 export type SeverityLevel =
   | "UNSPECIFIED"
@@ -36,6 +36,11 @@ export interface Log {
   trace_id?: string;
   span_id?: string;
   service_name?: string;
+  observed_time_unix_nano?: number;
+  event_name?: string;
+  flags?: number;
+  resource_attributes?: Attributes;
+  scope?: InstrumentationScope;
 }
 
 export interface LogFilters {

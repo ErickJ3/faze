@@ -19,6 +19,9 @@ const GRID_COLS = "grid grid-cols-[minmax(280px,40%)_1fr]";
 /** Fractions of total duration where axis ticks and gridlines sit. */
 const TICK_FRACTIONS = [0, 0.25, 0.5, 0.75, 1];
 
+/** Cap on rendered event markers per span, guarding pathological spans. */
+const MAX_EVENT_MARKERS = 50;
+
 function EmptyWaterfall({ message }: { message: string }) {
   return (
     <div className="flex items-center justify-center h-32 border border-border">
@@ -117,6 +120,21 @@ function SpanRow({
               width: `${Math.max(width, 0.5)}%`,
             }}
           />
+          {(node.events ?? []).slice(0, MAX_EVENT_MARKERS).map((event, i) => {
+            const eventOffset =
+              ((event.time_unix_nano - minTime) / 1_000_000 / totalDuration) *
+              100;
+            return (
+              <div
+                key={`${event.time_unix_nano}-${i.toString()}`}
+                title={event.name}
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-1.5 h-1.5 rotate-45 bg-amber-500 pointer-events-auto"
+                style={{
+                  left: `${Math.min(Math.max(eventOffset, 0), 100)}%`,
+                }}
+              />
+            );
+          })}
         </div>
       </div>
 

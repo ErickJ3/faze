@@ -1,4 +1,4 @@
-import type { Attributes } from "./common";
+import type { Attributes, InstrumentationScope } from "./common";
 
 export type SpanKind =
   | "UNSPECIFIED"
@@ -15,6 +15,21 @@ export interface Status {
   message?: string;
 }
 
+export interface SpanEvent {
+  time_unix_nano: number;
+  name: string;
+  attributes?: Attributes;
+  dropped_attributes_count?: number;
+}
+
+export interface SpanLink {
+  trace_id: string;
+  span_id: string;
+  trace_state?: string;
+  attributes?: Attributes;
+  dropped_attributes_count?: number;
+}
+
 export interface Span {
   span_id: string;
   trace_id: string;
@@ -26,6 +41,14 @@ export interface Span {
   attributes: Attributes;
   status: Status;
   service_name?: string;
+  events?: SpanEvent[];
+  links?: SpanLink[];
+  trace_state?: string;
+  dropped_attributes_count?: number;
+  dropped_events_count?: number;
+  dropped_links_count?: number;
+  resource_attributes?: Attributes;
+  scope?: InstrumentationScope;
 }
 
 export interface Trace {
