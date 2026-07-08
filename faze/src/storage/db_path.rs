@@ -2,34 +2,6 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Get the Faze configuration directory
-/// Returns ~/.config/faze on Linux/macOS or %APPDATA%/faze on Windows
-/// This is for configuration files only, not for data storage
-pub fn get_config_dir() -> Result<PathBuf, std::io::Error> {
-    let config_dir = if cfg!(target_os = "windows") {
-        env::var("APPDATA")
-            .map_or_else(|_| PathBuf::from("."), PathBuf::from)
-            .join("faze")
-    } else {
-        env::var("XDG_CONFIG_HOME")
-            .map_or_else(
-                |_| {
-                    env::var("HOME")
-                        .map_or_else(|_| PathBuf::from("."), PathBuf::from)
-                        .join(".config")
-                },
-                PathBuf::from,
-            )
-            .join("faze")
-    };
-
-    if !config_dir.exists() {
-        fs::create_dir_all(&config_dir)?;
-    }
-
-    Ok(config_dir)
-}
-
 /// Get the Faze data directory for persistent storage (databases, caches, etc.)
 /// Returns ~/.local/share/faze on Linux/macOS or %LOCALAPPDATA%/faze on Windows
 pub fn get_data_dir() -> Result<PathBuf, std::io::Error> {
@@ -131,12 +103,6 @@ pub fn get_project_db_path() -> Result<PathBuf, std::io::Error> {
     Ok(data_dir.join(format!("{db_name}.db")))
 }
 
-/// Get the default database path
-pub fn get_default_db_path() -> Result<PathBuf, std::io::Error> {
-    let data_dir = get_data_dir()?;
-    Ok(data_dir.join("default.db"))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -161,12 +127,6 @@ mod tests {
         let db_name = project_path_to_db_name(Path::new(&long_path));
         assert!(db_name.starts_with("project_"));
         assert!(db_name.len() < 30);
-    }
-
-    #[test]
-    fn test_get_config_dir() {
-        let config_dir = get_config_dir().unwrap();
-        assert!(config_dir.to_string_lossy().contains("faze"));
     }
 
     #[test]

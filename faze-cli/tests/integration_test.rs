@@ -61,7 +61,7 @@ fn create_test_otlp_span(
     }
 }
 
-/// Test that we can send a trace via gRPC and it gets stored in DuckDB
+/// Test that we can send a trace via gRPC and it gets stored in SQLite
 #[tokio::test]
 #[ignore = "requires running collector; run with cargo test -- --ignored"]
 async fn test_send_trace_via_grpc() {
@@ -116,9 +116,9 @@ async fn test_send_trace_via_grpc() {
     // Give it time to persist
     sleep(Duration::from_millis(100)).await;
 
-    // Note: We can't query the database here because of DuckDB locking
-    // In a real test, we would either:
-    // 1. Use the REST API to query (once implemented)
+    // Note: We don't query the database file here; the running server owns
+    // its own SQLite connection. In a fuller test we would either:
+    // 1. Use the REST API to query
     // 2. Stop the server and then query
     // 3. Use a separate database file for each test
 

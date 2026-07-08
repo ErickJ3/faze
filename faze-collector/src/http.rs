@@ -338,7 +338,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_export_traces_http_concurrent() {
-        use futures::future::join_all;
         let storage = Arc::new(Storage::new_in_memory().unwrap());
 
         let mut handles = vec![];
@@ -420,9 +419,8 @@ mod tests {
             handles.push(handle);
         }
 
-        let responses = join_all(handles).await;
-        for response in responses {
-            let resp = response.unwrap();
+        for handle in handles {
+            let resp = handle.await.unwrap();
             assert_eq!(resp.status(), StatusCode::OK);
         }
         assert_eq!(storage.count_spans().unwrap(), 10);

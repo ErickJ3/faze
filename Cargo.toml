@@ -5,7 +5,6 @@ members = [
     "faze-collector",
     "faze-server",
     "faze-cli",
-    "faze-tui",
 ]
 
 [workspace.package]
@@ -22,21 +21,20 @@ axum = "0.8"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "fs"] }
 tonic = "0.14"
+tonic-prost = "0.14"
+tonic-prost-build = "0.14"
 prost = "0.14"
 rusqlite = { version = "0.37.0", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 clap = { version = "4", features = ["derive"] }
 colored = "3"
-ratatui = "0.29"
-crossterm = "0.29"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 thiserror = "2"
 chrono = { version = "0.4", features = ["serde"] }
 rust-embed = "8"
 mime_guess = "2"
-anyhow = "1"
 faze = { path = "faze" }
 faze-collector = { path = "faze-collector" }
 faze-server = { path = "faze-server" }

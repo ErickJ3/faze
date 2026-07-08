@@ -15,9 +15,7 @@ use thiserror::Error;
 use convert::{
     from_json, parse_metric_type, parse_severity_level, parse_temporality, span_from_row, to_json,
 };
-pub use db_path::{
-    detect_project_root, get_config_dir, get_data_dir, get_default_db_path, get_project_db_path,
-};
+pub use db_path::{detect_project_root, get_data_dir, get_project_db_path};
 use schema::init_schema;
 
 /// Errors returned by [`Storage`] operations.

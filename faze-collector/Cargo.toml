@@ -10,20 +10,16 @@ repository.workspace = true
 faze.workspace = true
 tokio.workspace = true
 tonic.workspace = true
-tonic-prost = "0.14"
+tonic-prost.workspace = true
 prost.workspace = true
 tracing.workspace = true
-thiserror.workspace = true
-serde.workspace = true
-serde_json.workspace = true
 axum.workspace = true
-tower.workspace = true
 
 [dev-dependencies]
-futures = "0.3"
+tower.workspace = true
 
 [build-dependencies]
-tonic-prost-build = "0.14"
+tonic-prost-build.workspace = true
 
 [lints]
 workspace = true
