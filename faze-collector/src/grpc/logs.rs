@@ -45,9 +45,9 @@ impl LogsService for OtlpLogsCollector {
 
         for log in &logs {
             if let Err(e) = self.storage.insert_log(log) {
-                error!("Failed to insert span {:?}: {}", log.span_id, e);
+                error!("Failed to insert log {:?}: {}", log.span_id, e);
                 rejected_log_records += 1;
-                error_messages.push(format!("span {:?}: {e}", log.span_id));
+                error_messages.push(format!("log {:?}: {e}", log.span_id));
             }
         }
 

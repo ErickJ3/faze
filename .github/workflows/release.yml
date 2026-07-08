@@ -52,6 +52,8 @@ jobs:
     name: Build
     needs: [build_ui]
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: ""
     strategy:
       fail-fast: false
       matrix:
@@ -137,6 +139,8 @@ jobs:
     name: Build Linux Packages
     needs: [build_ui]
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: ""
     steps:
       - uses: actions/checkout@v4
 

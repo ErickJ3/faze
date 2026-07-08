@@ -73,9 +73,11 @@ pub struct TraceInfo {
 }
 
 /// Query parameters for generic listing endpoints.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ListParams {
+    /// Optional service-name filter.
     service: Option<String>,
+    /// Maximum number of results to return.
     limit: Option<usize>,
 }
 
@@ -248,14 +250,27 @@ pub async fn list_metrics(
     State(state): State<AppState>,
     Query(params): Query<ListParams>,
 ) -> impl IntoResponse {
-    let metrics = state
+    info!("GET /api/metrics - params: {:?}", params);
+
+    match state
         .storage
         .list_metrics(params.service.as_deref(), params.limit)
-        .unwrap_or_default();
-
-    Json(serde_json::json!({
-        "metrics": metrics
-    }))
+    {
+        Ok(metrics) => Json(serde_json::json!({
+            "metrics": metrics
+        }))
+        .into_response(),
+        Err(e) => {
+            error!("Failed to list metrics: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "error": format!("Failed to list metrics: {e}")
+                })),
+            )
+                .into_response()
+        }
+    }
 }
 
 /// GET /health - Health check endpoint

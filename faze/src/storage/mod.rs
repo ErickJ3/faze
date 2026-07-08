@@ -442,21 +442,13 @@ impl Storage {
             .query_map(&params_refs[..], |row| {
                 let attributes_json: String = row.get(8)?;
 
-                let raw_json: serde_json::Value =
-                    serde_json::from_str(&attributes_json).map_err(|e| {
-                        rusqlite::Error::FromSqlConversionFailure(
-                            8,
-                            rusqlite::types::Type::Text,
-                            Box::new(e),
-                        )
-                    })?;
-
-                let mut attributes = Attributes::default();
-                if let serde_json::Value::Object(map) = raw_json {
-                    for (k, v) in map {
-                        attributes.insert(k, v.to_string());
-                    }
-                }
+                let attributes: Attributes = from_json(&attributes_json).map_err(|e| {
+                    rusqlite::Error::FromSqlConversionFailure(
+                        8,
+                        rusqlite::types::Type::Text,
+                        Box::new(e),
+                    )
+                })?;
 
                 let metric_type_str: String = row.get(3)?;
                 let metric_type: MetricType = parse_metric_type(&metric_type_str);
@@ -620,5 +612,46 @@ mod tests {
         let storage = Storage::new_in_memory().unwrap();
         let result = storage.get_trace_by_id("nonexistent");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_metric_attributes_roundtrip_typed() {
+        use crate::models::AttributeValue;
+
+        let storage = Storage::new_in_memory().unwrap();
+
+        let mut attributes = Attributes::new();
+        attributes.insert("string_key", "value");
+        attributes.insert("int_key", 42i64);
+        attributes.insert("double_key", 1.5f64);
+        attributes.insert("bool_key", true);
+
+        let metric = Metric::new(
+            "test.metric".to_string(),
+            None,
+            None,
+            MetricType::Gauge,
+            AggregationTemporality::Unspecified,
+            vec![MetricDataPoint {
+                time_unix_nano: 1_000_000_000,
+                start_time_unix_nano: None,
+                value: 1.0,
+                attributes,
+            }],
+            Some("test-service".to_string()),
+        );
+
+        storage.insert_metric(&metric).unwrap();
+        let metrics = storage.list_metrics(None, None).unwrap();
+
+        assert_eq!(metrics.len(), 1);
+        let attrs = &metrics[0].data_points[0].attributes;
+        assert_eq!(
+            attrs.get("string_key"),
+            Some(&AttributeValue::String("value".to_string()))
+        );
+        assert_eq!(attrs.get("int_key"), Some(&AttributeValue::Int(42)));
+        assert_eq!(attrs.get("double_key"), Some(&AttributeValue::Double(1.5)));
+        assert_eq!(attrs.get("bool_key"), Some(&AttributeValue::Bool(true)));
     }
 }
