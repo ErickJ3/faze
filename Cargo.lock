@@ -361,7 +361,7 @@ checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
 name = "faze"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "rusqlite",
@@ -373,7 +373,7 @@ dependencies = [
 
 [[package]]
 name = "faze-cli"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "axum",
  "clap",
@@ -389,7 +389,7 @@ dependencies = [
 
 [[package]]
 name = "faze-collector"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "axum",
  "base64",
@@ -410,7 +410,7 @@ dependencies = [
 
 [[package]]
 name = "faze-server"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "axum",
  "faze",
