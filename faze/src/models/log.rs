@@ -1,5 +1,6 @@
 use super::attributes::Attributes;
 use super::db_enum::impl_db_str;
+use super::scope::InstrumentationScope;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -139,13 +140,28 @@ pub struct Log {
     pub span_id: Option<String>,
     /// Service name (denormalized from resource)
     pub service_name: Option<String>,
+    /// Time the record was observed by the collection system (if any)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub observed_time_unix_nano: Option<i64>,
+    /// Event name identifying the class of the record (if any)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub event_name: Option<String>,
+    /// W3C trace flags of the record (if any)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flags: Option<u32>,
+    /// Full resource attributes of the producer
+    #[serde(default, skip_serializing_if = "Attributes::is_empty")]
+    pub resource_attributes: Attributes,
+    /// Instrumentation scope that produced the record
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scope: Option<InstrumentationScope>,
 }
 
 impl Log {
     /// Build a log entry from its component fields.
     #[allow(clippy::too_many_arguments)]
     #[must_use]
-    pub const fn new(
+    pub fn new(
         time_unix_nano: i64,
         severity_level: SeverityLevel,
         severity_text: Option<String>,
@@ -164,7 +180,47 @@ impl Log {
             trace_id,
             span_id,
             service_name,
+            observed_time_unix_nano: None,
+            event_name: None,
+            flags: None,
+            resource_attributes: Attributes::new(),
+            scope: None,
         }
+    }
+
+    /// Set the observed timestamp.
+    #[must_use]
+    pub const fn with_observed_time(mut self, observed_time_unix_nano: Option<i64>) -> Self {
+        self.observed_time_unix_nano = observed_time_unix_nano;
+        self
+    }
+
+    /// Set the event name.
+    #[must_use]
+    pub fn with_event_name(mut self, event_name: Option<String>) -> Self {
+        self.event_name = event_name;
+        self
+    }
+
+    /// Set the W3C trace flags.
+    #[must_use]
+    pub const fn with_flags(mut self, flags: Option<u32>) -> Self {
+        self.flags = flags;
+        self
+    }
+
+    /// Attach the full resource attributes.
+    #[must_use]
+    pub fn with_resource_attributes(mut self, resource_attributes: Attributes) -> Self {
+        self.resource_attributes = resource_attributes;
+        self
+    }
+
+    /// Attach the instrumentation scope.
+    #[must_use]
+    pub fn with_scope(mut self, scope: Option<InstrumentationScope>) -> Self {
+        self.scope = scope;
+        self
     }
 
     /// Get timestamp as `DateTime`
@@ -270,6 +326,42 @@ mod tests {
     #[test]
     fn test_log_serde() {
         let log = create_test_log();
+        let json = serde_json::to_string(&log).unwrap();
+        let deserialized: Log = serde_json::from_str(&json).unwrap();
+        assert_eq!(log, deserialized);
+    }
+
+    #[test]
+    fn test_log_deserializes_pre_v1_json() {
+        // Stored JSON written before observed_time/event_name/flags existed.
+        let json = r#"{
+            "time_unix_nano": 1, "severity_level": "INFO", "severity_text": "info",
+            "body": "msg", "attributes": {}, "trace_id": null, "span_id": null,
+            "service_name": "svc"
+        }"#;
+        let log: Log = serde_json::from_str(json).unwrap();
+        assert_eq!(log.observed_time_unix_nano, None);
+        assert_eq!(log.event_name, None);
+        assert_eq!(log.flags, None);
+        assert!(log.resource_attributes.is_empty());
+        assert_eq!(log.scope, None);
+    }
+
+    #[test]
+    fn test_log_serde_full_fidelity() {
+        let mut resource_attrs = Attributes::new();
+        resource_attrs.insert("service.version", "1.2.3");
+        let log = create_test_log()
+            .with_observed_time(Some(1_000_000_000_000_000_001))
+            .with_event_name(Some("app.start".to_string()))
+            .with_flags(Some(1))
+            .with_resource_attributes(resource_attrs)
+            .with_scope(Some(InstrumentationScope::new(
+                "test-lib".to_string(),
+                None,
+                Attributes::new(),
+            )));
+
         let json = serde_json::to_string(&log).unwrap();
         let deserialized: Log = serde_json::from_str(&json).unwrap();
         assert_eq!(log, deserialized);

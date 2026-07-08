@@ -9,6 +9,8 @@ pub mod log;
 pub mod metric;
 /// Resource descriptors identifying telemetry producers.
 pub mod resource;
+/// Instrumentation scopes identifying telemetry sources within a producer.
+pub mod scope;
 /// Spans representing units of work in a trace.
 pub mod span;
 /// Traces aggregating related spans.
@@ -17,7 +19,11 @@ pub mod trace;
 // Re-exports
 pub use attributes::{AttributeValue, Attributes};
 pub use log::{Log, SeverityLevel};
-pub use metric::{AggregationTemporality, Metric, MetricDataPoint, MetricType};
+pub use metric::{
+    AggregationTemporality, Distribution, Exemplar, Metric, MetricDataPoint, MetricType,
+    QuantileValue,
+};
 pub use resource::Resource;
-pub use span::{Span, SpanKind, Status, StatusCode};
+pub use scope::InstrumentationScope;
+pub use span::{Span, SpanEvent, SpanKind, SpanLink, Status, StatusCode};
 pub use trace::Trace;

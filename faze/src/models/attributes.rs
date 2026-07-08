@@ -17,6 +17,10 @@ pub enum AttributeValue {
     Bytes(Vec<u8>),
     /// Nested array of values.
     Array(Vec<Self>),
+    /// Nested key-value map (OTLP `KvlistValue`).
+    /// Must stay the last variant: untagged deserialization tries variants in
+    /// order, so inserting one earlier would change how stored JSON decodes.
+    Map(HashMap<String, Self>),
 }
 
 impl From<String> for AttributeValue {
@@ -187,6 +191,18 @@ mod tests {
         attrs.insert("key", "value");
         assert_eq!(attrs.len(), 1);
         assert!(!attrs.is_empty());
+    }
+
+    #[test]
+    fn test_attribute_value_map_serde() {
+        let mut inner = HashMap::new();
+        inner.insert("nested".to_string(), AttributeValue::Int(1));
+        let val = AttributeValue::Map(inner);
+
+        let json = serde_json::to_string(&val).unwrap();
+        assert_eq!(json, r#"{"nested":1}"#);
+        let deserialized: AttributeValue = serde_json::from_str(&json).unwrap();
+        assert_eq!(val, deserialized);
     }
 
     #[test]

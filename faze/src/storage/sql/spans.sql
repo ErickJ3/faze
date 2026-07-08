@@ -9,6 +9,14 @@ CREATE TABLE IF NOT EXISTS spans (
     attributes TEXT NOT NULL,
     status TEXT NOT NULL,
     service_name TEXT,
+    events TEXT,
+    links TEXT,
+    trace_state TEXT,
+    dropped_attributes_count INTEGER NOT NULL DEFAULT 0,
+    dropped_events_count INTEGER NOT NULL DEFAULT 0,
+    dropped_links_count INTEGER NOT NULL DEFAULT 0,
+    resource_attributes TEXT,
+    scope TEXT,
     PRIMARY KEY (span_id, trace_id)
 );
 

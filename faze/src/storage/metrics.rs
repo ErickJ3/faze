@@ -1,6 +1,6 @@
 //! Metric persistence: inserts and listing.
 
-use super::rows::{metric_from_row, to_json};
+use super::rows::{attrs_to_json, metric_from_row, opt_to_json, slice_to_json, to_json};
 use super::{Result, Storage, service_filtered_query};
 use crate::models::Metric;
 use rusqlite::{Result as SqliteResult, params};
@@ -21,12 +21,18 @@ impl Storage {
                 "INSERT INTO metrics (
                     name, description, unit, metric_type, temporality,
                     time_unix_nano, start_time_unix_nano, value,
-                    attributes, service_name
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                    attributes, service_name,
+                    is_monotonic, distribution, exemplars,
+                    resource_attributes, scope
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
             )?;
             for metric in metrics {
+                let resource_attributes_json = attrs_to_json(&metric.resource_attributes)?;
+                let scope_json = opt_to_json(metric.scope.as_ref())?;
                 for data_point in &metric.data_points {
                     let attributes_json = to_json(&data_point.attributes)?;
+                    let distribution_json = opt_to_json(data_point.distribution.as_ref())?;
+                    let exemplars_json = slice_to_json(&data_point.exemplars)?;
                     stmt.execute(params![
                         &metric.name,
                         &metric.description,
@@ -38,6 +44,11 @@ impl Storage {
                         data_point.value,
                         attributes_json,
                         &metric.service_name,
+                        metric.is_monotonic,
+                        distribution_json,
+                        exemplars_json,
+                        &resource_attributes_json,
+                        &scope_json,
                     ])?;
                 }
             }
@@ -55,7 +66,9 @@ impl Storage {
         let (query, params_vec) = service_filtered_query(
             "SELECT name, description, unit, metric_type, temporality,
                     time_unix_nano, start_time_unix_nano, value,
-                    attributes, service_name
+                    attributes, service_name,
+                    is_monotonic, distribution, exemplars,
+                    resource_attributes, scope
                FROM metrics",
             "time_unix_nano",
             service_name,
@@ -102,12 +115,7 @@ mod tests {
             None,
             MetricType::Gauge,
             AggregationTemporality::Unspecified,
-            vec![MetricDataPoint {
-                time_unix_nano: 1_000_000_000,
-                start_time_unix_nano: None,
-                value: 1.0,
-                attributes,
-            }],
+            vec![MetricDataPoint::new(1_000_000_000, None, 1.0, attributes)],
             Some("test-service".to_string()),
         );
 
@@ -123,6 +131,78 @@ mod tests {
         assert_eq!(attrs.get("int_key"), Some(&AttributeValue::Int(42)));
         assert_eq!(attrs.get("double_key"), Some(&AttributeValue::Double(1.5)));
         assert_eq!(attrs.get("bool_key"), Some(&AttributeValue::Bool(true)));
+    }
+
+    #[test]
+    fn test_metric_full_fidelity_roundtrip() {
+        use crate::models::{Distribution, Exemplar, InstrumentationScope, QuantileValue};
+
+        let storage = Storage::new_in_memory().unwrap();
+        let mut resource_attrs = Attributes::new();
+        resource_attrs.insert("service.version", "2.0");
+
+        let dp = MetricDataPoint::new(1_000_000_000, Some(900_000_000), 15.0, Attributes::new())
+            .with_distribution(Some(Distribution::Histogram {
+                count: 4,
+                sum: Some(15.0),
+                min: Some(1.0),
+                max: Some(9.0),
+                bucket_counts: vec![1, 2, 1],
+                explicit_bounds: vec![2.5, 5.0],
+            }))
+            .with_exemplars(vec![Exemplar {
+                time_unix_nano: 999,
+                value: 9.0,
+                trace_id: Some("trace1".to_string()),
+                span_id: Some("span1".to_string()),
+                filtered_attributes: Attributes::new(),
+            }]);
+
+        let metric = Metric::new(
+            "latency".to_string(),
+            Some("request latency".to_string()),
+            Some("ms".to_string()),
+            MetricType::Histogram,
+            AggregationTemporality::Delta,
+            vec![dp],
+            Some("test-service".to_string()),
+        )
+        .with_is_monotonic(Some(false))
+        .with_resource_attributes(resource_attrs)
+        .with_scope(Some(InstrumentationScope::new(
+            "test-lib".to_string(),
+            Some("1.0".to_string()),
+            Attributes::new(),
+        )));
+
+        storage.insert_metric(&metric).unwrap();
+        let metrics = storage.list_metrics(None, None).unwrap();
+
+        assert_eq!(metrics.len(), 1);
+        assert_eq!(metrics[0], metric);
+
+        // Summary distribution survives too.
+        let summary_dp = MetricDataPoint::new(2_000_000_000, None, 30.0, Attributes::new())
+            .with_distribution(Some(Distribution::Summary {
+                count: 10,
+                sum: 30.0,
+                quantile_values: vec![QuantileValue {
+                    quantile: 0.99,
+                    value: 8.0,
+                }],
+            }));
+        let summary = Metric::new(
+            "latency.summary".to_string(),
+            None,
+            None,
+            MetricType::Summary,
+            AggregationTemporality::Unspecified,
+            vec![summary_dp],
+            None,
+        );
+        storage.insert_metric(&summary).unwrap();
+        let metrics = storage.list_metrics(None, None).unwrap();
+        assert!(metrics.contains(&summary));
     }
 
     #[test]
