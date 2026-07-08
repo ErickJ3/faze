@@ -42,29 +42,3 @@ export const STATUS_CODE_MAP: Record<StatusCode, string> = {
   Ok: "OK",
   Error: "ERROR",
 };
-
-export function getSeverityColor(level: string): string {
-  const upperLevel = level.toUpperCase();
-
-  if (upperLevel === "FATAL" || upperLevel === "ERROR") {
-    return "bg-red-500/10 text-red-500";
-  }
-
-  if (upperLevel === "WARN") {
-    return "bg-yellow-500/10 text-yellow-500";
-  }
-
-  if (upperLevel === "INFO") {
-    return "bg-blue-500/10 text-blue-500";
-  }
-
-  if (upperLevel === "DEBUG") {
-    return "bg-purple-500/10 text-purple-500";
-  }
-
-  if (upperLevel === "TRACE") {
-    return "bg-gray-500/10 text-gray-500";
-  }
-
-  return "bg-gray-500/10 text-gray-500";
-}
