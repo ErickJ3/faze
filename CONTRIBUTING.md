@@ -41,7 +41,6 @@ Faze is split into several crates:
 - `faze-collector` - OTLP protocol implementation (gRPC and HTTP)
 - `faze-server` - Web server and API
 - `faze-cli` - Command-line interface
-- `faze-tui` - Terminal UI (work in progress)
 - `ui/` - React-based web interface
 
 ## Development Workflow

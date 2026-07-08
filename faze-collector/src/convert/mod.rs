@@ -72,6 +72,14 @@ pub fn convert_resource(resource: &Resource) -> FazeResource {
     FazeResource::new(attributes)
 }
 
+/// Extract `service.name` from an optional OTLP resource.
+#[must_use]
+pub(crate) fn resource_service_name(resource: Option<&Resource>) -> Option<String> {
+    resource
+        .map(convert_resource)
+        .and_then(|r| r.service_name().map(str::to_string))
+}
+
 /// Convert bytes to hex string.
 #[must_use]
 pub fn bytes_to_hex(bytes: &[u8]) -> String {

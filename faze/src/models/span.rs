@@ -1,11 +1,11 @@
 use super::attributes::Attributes;
+use super::db_enum::impl_db_str;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Span kind indicates the type of span
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[derive(Default)]
 pub enum SpanKind {
     /// Span kind is not specified.
     #[default]
@@ -22,25 +22,21 @@ pub enum SpanKind {
     Consumer,
 }
 
-impl SpanKind {
-    /// Stable string used for database persistence. Do not change without a migration.
-    #[must_use]
-    pub const fn as_db_str(self) -> &'static str {
-        match self {
-            Self::Unspecified => "Unspecified",
-            Self::Internal => "Internal",
-            Self::Server => "Server",
-            Self::Client => "Client",
-            Self::Producer => "Producer",
-            Self::Consumer => "Consumer",
-        }
-    }
-}
+impl_db_str!(
+    SpanKind {
+        Unspecified,
+        Internal,
+        Server,
+        Client,
+        Producer,
+        Consumer,
+    },
+    fallback = Unspecified
+);
 
 /// Span status code
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[derive(Default)]
 pub enum StatusCode {
     /// Status not set by the producer.
     #[default]

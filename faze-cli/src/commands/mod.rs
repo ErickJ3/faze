@@ -5,7 +5,6 @@ pub mod info;
 pub mod logs;
 pub mod serve;
 pub mod traces;
-pub mod tui;
 
 use crate::cli::{Cli, Commands};
 
@@ -21,6 +20,5 @@ pub async fn dispatch(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         Commands::Logs { service, db_path } => logs::run(service, db_path),
         Commands::Clean { db_path, all } => clean::run(db_path, all),
         Commands::Info => info::run(),
-        Commands::Tui => tui::run(),
     }
 }

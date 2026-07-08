@@ -60,7 +60,4 @@ pub enum Commands {
 
     /// Show DB information
     Info,
-
-    /// Open TUI
-    Tui,
 }

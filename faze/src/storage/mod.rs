@@ -1,23 +1,18 @@
 //! SQLite-backed storage layer for spans, logs, and metrics.
 
-mod convert;
 mod db_path;
+mod logs;
+mod metrics;
+mod rows;
 mod schema;
+mod spans;
 
-use crate::models::{
-    AggregationTemporality, Attributes, Log, Metric, MetricDataPoint, MetricType, Span, Trace,
-};
-use rusqlite::{Connection, Result as SqliteResult, params};
+use rusqlite::Connection;
 use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard};
 use thiserror::Error;
 
-use convert::{
-    from_json, parse_metric_type, parse_severity_level, parse_temporality, span_from_row, to_json,
-};
-pub use db_path::{
-    detect_project_root, get_config_dir, get_data_dir, get_default_db_path, get_project_db_path,
-};
+pub use db_path::{detect_project_root, get_data_dir, get_project_db_path};
 use schema::init_schema;
 
 /// Errors returned by [`Storage`] operations.
@@ -117,508 +112,66 @@ impl Storage {
         self.conn.lock().map_err(|_| StorageError::LockPoisoned)
     }
 
-    /// Insert a span
-    pub fn insert_span(&self, span: &Span) -> Result<()> {
-        self.insert_spans(std::slice::from_ref(span))
-    }
-
-    /// Insert multiple spans atomically under a single transaction.
+    /// Run `f` inside a single transaction, committing on success.
     #[allow(clippy::significant_drop_tightening)]
-    pub fn insert_spans(&self, spans: &[Span]) -> Result<()> {
-        if spans.is_empty() {
-            return Ok(());
-        }
+    fn with_tx<F>(&self, f: F) -> Result<()>
+    where
+        F: FnOnce(&rusqlite::Transaction<'_>) -> Result<()>,
+    {
         let mut conn = self.lock()?;
         let tx = conn.transaction()?;
-        {
-            let mut stmt = tx.prepare(
-                "INSERT INTO spans (
-                    span_id, trace_id, parent_span_id, name, kind,
-                    start_time_unix_nano, end_time_unix_nano,
-                    attributes, status, service_name
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-            )?;
-            for span in spans {
-                let attributes_json = to_json(&span.attributes)?;
-                let status_json = to_json(&span.status)?;
-                stmt.execute(params![
-                    &span.span_id,
-                    &span.trace_id,
-                    &span.parent_span_id,
-                    &span.name,
-                    span.kind.as_db_str(),
-                    span.start_time_unix_nano,
-                    span.end_time_unix_nano,
-                    attributes_json,
-                    status_json,
-                    &span.service_name,
-                ])?;
-            }
-        }
+        f(&tx)?;
         tx.commit()?;
         Ok(())
     }
 
-    /// Insert a log
-    pub fn insert_log(&self, log: &Log) -> Result<()> {
-        self.insert_logs(std::slice::from_ref(log))
-    }
-
-    /// Insert multiple logs atomically under a single transaction.
+    /// Count all rows of a table. `table` must be a compile-time table name.
     #[allow(clippy::significant_drop_tightening)]
-    pub fn insert_logs(&self, logs: &[Log]) -> Result<()> {
-        if logs.is_empty() {
-            return Ok(());
-        }
-        let mut conn = self.lock()?;
-        let tx = conn.transaction()?;
-        {
-            let mut stmt = tx.prepare(
-                "INSERT INTO logs (
-                    time_unix_nano, severity_level, severity_text, body,
-                    attributes, trace_id, span_id, service_name
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            )?;
-            for log in logs {
-                let attributes_json = to_json(&log.attributes)?;
-                stmt.execute(params![
-                    log.time_unix_nano,
-                    log.severity_level.as_db_str(),
-                    &log.severity_text,
-                    &log.body,
-                    attributes_json,
-                    &log.trace_id,
-                    &log.span_id,
-                    &log.service_name,
-                ])?;
-            }
-        }
-        tx.commit()?;
-        Ok(())
-    }
-
-    /// Insert a metric
-    pub fn insert_metric(&self, metric: &Metric) -> Result<()> {
-        self.insert_metrics(std::slice::from_ref(metric))
-    }
-
-    /// Insert multiple metrics atomically under a single transaction.
-    #[allow(clippy::significant_drop_tightening)]
-    pub fn insert_metrics(&self, metrics: &[Metric]) -> Result<()> {
-        if metrics.is_empty() {
-            return Ok(());
-        }
-        let mut conn = self.lock()?;
-        let tx = conn.transaction()?;
-        {
-            let mut stmt = tx.prepare(
-                "INSERT INTO metrics (
-                    name, description, unit, metric_type, temporality,
-                    time_unix_nano, start_time_unix_nano, value,
-                    attributes, service_name
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-            )?;
-            for metric in metrics {
-                for data_point in &metric.data_points {
-                    let attributes_json = to_json(&data_point.attributes)?;
-                    stmt.execute(params![
-                        &metric.name,
-                        &metric.description,
-                        &metric.unit,
-                        metric.metric_type.as_db_str(),
-                        metric.temporality.as_db_str(),
-                        data_point.time_unix_nano,
-                        data_point.start_time_unix_nano,
-                        data_point.value,
-                        attributes_json,
-                        &metric.service_name,
-                    ])?;
-                }
-            }
-        }
-        tx.commit()?;
-        Ok(())
-    }
-
-    /// Get a complete trace by ID
-    pub fn get_trace_by_id(&self, trace_id: &str) -> Result<Trace> {
-        let spans = self.get_spans_by_trace_id(trace_id)?;
-
-        if spans.is_empty() {
-            return Err(StorageError::NotFound(format!(
-                "Trace not found: {trace_id}"
-            )));
-        }
-
-        Ok(Trace::new(trace_id.to_string(), spans))
-    }
-
-    /// Get all spans for a trace
-    #[allow(clippy::significant_drop_tightening)]
-    fn get_spans_by_trace_id(&self, trace_id: &str) -> Result<Vec<Span>> {
+    fn count_rows(&self, table: &str) -> Result<i64> {
         let conn = self.lock()?;
-        let mut stmt = conn.prepare(
-            "SELECT span_id, trace_id, parent_span_id, name, kind,
-                    start_time_unix_nano, end_time_unix_nano,
-                    attributes, status, service_name
-             FROM spans
-             WHERE trace_id = ?1
-             ORDER BY start_time_unix_nano",
-        )?;
-
-        let spans = stmt
-            .query_map([trace_id], span_from_row)?
-            .collect::<SqliteResult<Vec<_>>>()?;
-
-        Ok(spans)
+        let count: i64 = conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+            row.get(0)
+        })?;
+        Ok(count)
     }
+}
 
-    /// List traces with optional filters
-    #[allow(
-        clippy::significant_drop_tightening,
-        clippy::option_if_let_else,
-        clippy::cast_possible_wrap,
-        clippy::redundant_closure_for_method_calls
-    )]
-    pub fn list_traces(
-        &self,
-        service_name: Option<&str>,
-        limit: Option<usize>,
-    ) -> Result<Vec<Trace>> {
-        let conn = self.lock()?;
+/// Build a `SELECT` with an optional service-name filter, plus ordering and a
+/// row cap. `base` and `order_col` come from compile-time literals only.
+fn service_filtered_query(
+    base: &str,
+    order_col: &str,
+    service_name: Option<&str>,
+    limit: Option<usize>,
+) -> (String, Vec<Box<dyn rusqlite::ToSql>>) {
+    let limit_value = limit.map_or(100, |l| i64::try_from(l).unwrap_or(i64::MAX));
 
-        let (query, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) = if let Some(service) =
-            service_name
-        {
+    service_name.map_or_else(
+        || {
             (
-                "SELECT DISTINCT trace_id FROM spans WHERE service_name = ?1 ORDER BY start_time_unix_nano DESC LIMIT ?2".to_string(),
-                vec![Box::new(service.to_string()), Box::new(limit.unwrap_or(100) as i64)],
+                format!("{base} ORDER BY {order_col} DESC LIMIT ?1"),
+                vec![Box::new(limit_value) as Box<dyn rusqlite::ToSql>],
             )
-        } else {
+        },
+        |service| {
             (
-                "SELECT DISTINCT trace_id FROM spans ORDER BY start_time_unix_nano DESC LIMIT ?1"
-                    .to_string(),
-                vec![Box::new(limit.unwrap_or(100) as i64)],
+                format!("{base} WHERE service_name = ?1 ORDER BY {order_col} DESC LIMIT ?2"),
+                vec![
+                    Box::new(service.to_string()) as Box<dyn rusqlite::ToSql>,
+                    Box::new(limit_value),
+                ],
             )
-        };
-
-        let mut stmt = conn.prepare(&query)?;
-        let params_refs: Vec<&dyn rusqlite::ToSql> =
-            params_vec.iter().map(|p| p.as_ref()).collect();
-        let trace_ids: Vec<String> = stmt
-            .query_map(&params_refs[..], |row| row.get(0))?
-            .collect::<SqliteResult<Vec<_>>>()?;
-
-        drop(stmt);
-        drop(conn);
-
-        let mut traces = Vec::new();
-        for trace_id in trace_ids {
-            if let Ok(trace) = self.get_trace_by_id(&trace_id) {
-                traces.push(trace);
-            }
-        }
-
-        Ok(traces)
-    }
-
-    /// List logs with optional filters
-    #[allow(
-        clippy::significant_drop_tightening,
-        clippy::option_if_let_else,
-        clippy::cast_possible_wrap,
-        clippy::redundant_closure_for_method_calls
-    )]
-    pub fn list_logs(&self, service_name: Option<&str>, limit: Option<usize>) -> Result<Vec<Log>> {
-        let conn = self.lock()?;
-
-        let (query, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) =
-            if let Some(service) = service_name {
-                (
-                    "SELECT time_unix_nano, severity_level, severity_text, body,
-                        attributes, trace_id, span_id, service_name
-                 FROM logs
-                 WHERE service_name = ?1
-                 ORDER BY time_unix_nano DESC
-                 LIMIT ?2"
-                        .to_string(),
-                    vec![
-                        Box::new(service.to_string()),
-                        Box::new(limit.unwrap_or(100) as i64),
-                    ],
-                )
-            } else {
-                (
-                    "SELECT time_unix_nano, severity_level, severity_text, body,
-                        attributes, trace_id, span_id, service_name
-                 FROM logs
-                 ORDER BY time_unix_nano DESC
-                 LIMIT ?1"
-                        .to_string(),
-                    vec![Box::new(limit.unwrap_or(100) as i64)],
-                )
-            };
-
-        let mut stmt = conn.prepare(&query)?;
-        let params_refs: Vec<&dyn rusqlite::ToSql> =
-            params_vec.iter().map(|p| p.as_ref()).collect();
-
-        let logs = stmt
-            .query_map(&params_refs[..], |row| {
-                let attributes_json: String = row.get(4)?;
-                let attributes = from_json(&attributes_json).map_err(|e| {
-                    rusqlite::Error::FromSqlConversionFailure(
-                        4,
-                        rusqlite::types::Type::Text,
-                        Box::new(e),
-                    )
-                })?;
-
-                let severity_str: String = row.get(1)?;
-                let severity_level = parse_severity_level(&severity_str);
-
-                Ok(Log::new(
-                    row.get(0)?,
-                    severity_level,
-                    row.get(2)?,
-                    row.get(3)?,
-                    attributes,
-                    row.get(5)?,
-                    row.get(6)?,
-                    row.get(7)?,
-                ))
-            })?
-            .collect::<SqliteResult<Vec<_>>>()?;
-
-        Ok(logs)
-    }
-
-    /// List metrics with optional service-name filter and result cap.
-    #[allow(
-        clippy::significant_drop_tightening,
-        clippy::option_if_let_else,
-        clippy::cast_possible_wrap,
-        clippy::redundant_closure_for_method_calls
-    )]
-    pub fn list_metrics(
-        &self,
-        service_name: Option<&str>,
-        limit: Option<usize>,
-    ) -> Result<Vec<Metric>> {
-        let conn = self.lock()?;
-        let limit_value = limit.unwrap_or(100) as i64;
-
-        let (query, params_vec): (String, Vec<Box<dyn rusqlite::ToSql>>) =
-            if let Some(service) = service_name {
-                (
-                    "SELECT name, description, unit, metric_type, temporality,
-                            time_unix_nano, start_time_unix_nano, value,
-                            attributes, service_name
-                       FROM metrics
-                       WHERE service_name = ?1
-                       ORDER BY time_unix_nano DESC
-                       LIMIT ?2"
-                        .to_string(),
-                    vec![Box::new(service.to_string()), Box::new(limit_value)],
-                )
-            } else {
-                (
-                    "SELECT name, description, unit, metric_type, temporality,
-                            time_unix_nano, start_time_unix_nano, value,
-                            attributes, service_name
-                       FROM metrics
-                       ORDER BY time_unix_nano DESC
-                       LIMIT ?1"
-                        .to_string(),
-                    vec![Box::new(limit_value)],
-                )
-            };
-
-        let mut stmt = conn.prepare(&query)?;
-        let params_refs: Vec<&dyn rusqlite::ToSql> =
-            params_vec.iter().map(|p| p.as_ref()).collect();
-
-        let metrics = stmt
-            .query_map(&params_refs[..], |row| {
-                let attributes_json: String = row.get(8)?;
-
-                let raw_json: serde_json::Value =
-                    serde_json::from_str(&attributes_json).map_err(|e| {
-                        rusqlite::Error::FromSqlConversionFailure(
-                            8,
-                            rusqlite::types::Type::Text,
-                            Box::new(e),
-                        )
-                    })?;
-
-                let mut attributes = Attributes::default();
-                if let serde_json::Value::Object(map) = raw_json {
-                    for (k, v) in map {
-                        attributes.insert(k, v.to_string());
-                    }
-                }
-
-                let metric_type_str: String = row.get(3)?;
-                let metric_type: MetricType = parse_metric_type(&metric_type_str);
-
-                let temporality_str: String = row.get(4)?;
-                let temporality: AggregationTemporality = parse_temporality(&temporality_str);
-
-                let data_point = MetricDataPoint {
-                    time_unix_nano: row.get(5)?,
-                    start_time_unix_nano: row.get(6)?,
-                    value: row.get(7)?,
-                    attributes,
-                };
-
-                Ok(Metric {
-                    name: row.get(0)?,
-                    description: row.get(1)?,
-                    unit: row.get(2)?,
-                    metric_type,
-                    temporality,
-                    data_points: vec![data_point],
-                    service_name: row.get(9)?,
-                })
-            })?
-            .collect::<rusqlite::Result<Vec<Metric>>>()
-            .map_err(StorageError::from)?;
-
-        Ok(metrics)
-    }
-
-    /// Get count of spans
-    #[allow(clippy::significant_drop_tightening)]
-    pub fn count_spans(&self) -> Result<i64> {
-        let conn = self.lock()?;
-        let count: i64 = conn.query_row("SELECT COUNT(*) FROM spans", [], |row| row.get(0))?;
-        Ok(count)
-    }
-
-    /// Get count of logs
-    #[allow(clippy::significant_drop_tightening)]
-    pub fn count_logs(&self) -> Result<i64> {
-        let conn = self.lock()?;
-        let count: i64 = conn.query_row("SELECT COUNT(*) FROM logs", [], |row| row.get(0))?;
-        Ok(count)
-    }
-
-    /// Get count of metrics
-    #[allow(clippy::significant_drop_tightening)]
-    pub fn count_metrics(&self) -> Result<i64> {
-        let conn = self.lock()?;
-        let count: i64 = conn.query_row("SELECT COUNT(*) FROM metrics", [], |row| row.get(0))?;
-        Ok(count)
-    }
+        },
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{Attributes, SpanKind, Status};
-
-    fn create_test_span(span_id: &str, trace_id: &str) -> Span {
-        Span::new(
-            span_id.to_string(),
-            trace_id.to_string(),
-            None,
-            "test-operation".to_string(),
-            SpanKind::Server,
-            1_000_000_000_000_000_000,
-            1_000_000_000_100_000_000,
-            Attributes::new(),
-            Status::ok(),
-            Some("test-service".to_string()),
-        )
-    }
 
     #[test]
     fn test_storage_new_in_memory() {
         let storage = Storage::new_in_memory();
         assert!(storage.is_ok());
-    }
-
-    #[test]
-    fn test_insert_and_get_span() {
-        let storage = Storage::new_in_memory().unwrap();
-        let span = create_test_span("span1", "trace1");
-
-        storage.insert_span(&span).unwrap();
-        let trace = storage.get_trace_by_id("trace1").unwrap();
-
-        assert_eq!(trace.spans.len(), 1);
-        assert_eq!(trace.spans[0].span_id, "span1");
-    }
-
-    #[test]
-    fn test_insert_multiple_spans() {
-        let storage = Storage::new_in_memory().unwrap();
-        let spans = vec![
-            create_test_span("span1", "trace1"),
-            create_test_span("span2", "trace1"),
-        ];
-
-        storage.insert_spans(&spans).unwrap();
-        let trace = storage.get_trace_by_id("trace1").unwrap();
-
-        assert_eq!(trace.spans.len(), 2);
-    }
-
-    #[test]
-    fn test_list_traces() {
-        let storage = Storage::new_in_memory().unwrap();
-        storage
-            .insert_span(&create_test_span("span1", "trace1"))
-            .unwrap();
-        storage
-            .insert_span(&create_test_span("span2", "trace2"))
-            .unwrap();
-
-        let traces = storage.list_traces(None, None).unwrap();
-        assert_eq!(traces.len(), 2);
-    }
-
-    #[test]
-    fn test_count_spans() {
-        let storage = Storage::new_in_memory().unwrap();
-        assert_eq!(storage.count_spans().unwrap(), 0);
-
-        storage
-            .insert_span(&create_test_span("span1", "trace1"))
-            .unwrap();
-        assert_eq!(storage.count_spans().unwrap(), 1);
-
-        storage
-            .insert_span(&create_test_span("span2", "trace1"))
-            .unwrap();
-        assert_eq!(storage.count_spans().unwrap(), 2);
-    }
-
-    #[test]
-    fn test_insert_and_list_logs() {
-        let storage = Storage::new_in_memory().unwrap();
-        let log = Log::new(
-            1_000_000_000,
-            crate::models::SeverityLevel::Info,
-            Some("INFO".to_string()),
-            "Test log".to_string(),
-            Attributes::new(),
-            None,
-            None,
-            Some("test-service".to_string()),
-        );
-
-        storage.insert_log(&log).unwrap();
-        let logs = storage.list_logs(None, None).unwrap();
-
-        assert_eq!(logs.len(), 1);
-        assert_eq!(logs[0].body, "Test log");
-    }
-
-    #[test]
-    fn test_get_nonexistent_trace() {
-        let storage = Storage::new_in_memory().unwrap();
-        let result = storage.get_trace_by_id("nonexistent");
-        assert!(result.is_err());
     }
 }

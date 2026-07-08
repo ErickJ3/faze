@@ -6,71 +6,30 @@ test-fast = "test --workspace --lib"
 build-release = "build --release"
 build-all = "build --workspace --all-targets"
 run-release = "run --release -p faze-cli"
-check-all = "check --workspace --all-targets --all-features"
+check-all = "check --workspace --all-targets"
 fmt-all = "fmt --all"
-clippy-all = "clippy --workspace --all-targets --all-features -- -D warnings"
+clippy-all = "clippy --workspace --all-targets -- -D warnings"
 
 [build]
 incremental = true
 jobs = -1
 
+# Linker settings are local build speed-ups only; CI neutralizes rustflags
+# via RUSTFLAGS="". Never add codegen flags here that affect shipped binaries
+# (e.g. target-cpu=native) - profiles live in the root Cargo.toml.
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"
-rustflags = [
-  "-C", "link-arg=-fuse-ld=mold",
-  "-C", "target-cpu=native",
-]
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 
 [target.x86_64-unknown-linux-musl]
 linker = "clang"
 rustflags = [
   "-C", "link-arg=-fuse-ld=mold",
   "-C", "target-feature=+crt-static",
-  "-C", "target-cpu=native",
 ]
 
 [target.x86_64-apple-darwin]
-rustflags = [
-  "-C", "link-arg=-fuse-ld=/usr/bin/ld",
-  "-C", "target-cpu=native",
-]
+rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/ld"]
 
 [target.aarch64-apple-darwin]
-rustflags = [
-  "-C", "link-arg=-fuse-ld=/usr/bin/ld",
-  "-C", "target-cpu=native",
-]
-
-[target.x86_64-pc-windows-msvc]
-rustflags = [
-  "-C", "target-cpu=native",
-]
-
-[profile.dev]
-opt-level = 0
-debug = true
-split-debuginfo = "unpacked"
-incremental = true
-
-[profile.dev.package."*"]
-opt-level = 2
-
-[profile.release]
-opt-level = 3
-lto = "thin"
-codegen-units = 1
-strip = true
-panic = "abort"
-overflow-checks = false
-
-[profile.dist]
-inherits = "release"
-lto = "fat"
-codegen-units = 1
-strip = true
-panic = "abort"
-opt-level = "z"
-
-[profile.bench]
-inherits = "release"
-debug = true
+rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/ld"]

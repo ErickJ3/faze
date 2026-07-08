@@ -10,13 +10,15 @@ repository.workspace = true
 faze.workspace = true
 tokio.workspace = true
 axum.workspace = true
-tower.workspace = true
 tower-http.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
 rust-embed.workspace = true
 mime_guess.workspace = true
+
+[dev-dependencies]
+tower.workspace = true
 
 [lints]
 workspace = true

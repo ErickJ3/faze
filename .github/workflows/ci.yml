@@ -89,7 +89,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
   test:
     name: Test
@@ -126,7 +126,44 @@ jobs:
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test --workspace --all-features
+        run: cargo test --workspace
+
+  msrv:
+    name: MSRV (1.91)
+    needs: [build_ui]
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: ""
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: "cc"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faze-ui-dist
+          path: ui/dist
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.91"
+
+      - name: Install protobuf
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler clang
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-msrv-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check with MSRV
+        run: cargo check --workspace --all-targets
 
   build:
     name: Build Release

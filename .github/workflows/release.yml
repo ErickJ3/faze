@@ -52,6 +52,8 @@ jobs:
     name: Build
     needs: [build_ui]
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: ""
     strategy:
       fail-fast: false
       matrix:
@@ -115,7 +117,6 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          strip ${{ matrix.artifact_name }} || true
           tar czf ../../../${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
 
       - name: Archive binary (Windows)
@@ -137,6 +138,8 @@ jobs:
     name: Build Linux Packages
     needs: [build_ui]
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: ""
     steps:
       - uses: actions/checkout@v4
 

@@ -1,261 +1,117 @@
+//! The API route handlers.
+
+use super::AppState;
+use super::dto::{ListLogsQuery, ListMetricsQuery, ListTracesQuery, TraceInfo, TraceListResponse};
+use super::error::ApiError;
 use axum::{
     Json,
     extract::{Path, Query, State},
-    http::StatusCode,
     response::IntoResponse,
 };
-use faze::Storage;
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use tracing::{error, info};
-
-/// Shared application state
-#[derive(Clone)]
-pub struct AppState {
-    /// Shared storage handle used by all route handlers.
-    pub storage: Arc<Storage>,
-}
-
-/// Query parameters for listing traces
-#[derive(Debug, Deserialize)]
-pub struct ListTracesQuery {
-    /// Filter by service name
-    pub service: Option<String>,
-    /// Minimum duration in milliseconds
-    pub min_duration: Option<f64>,
-    /// Maximum duration in milliseconds
-    pub max_duration: Option<f64>,
-    /// Maximum number of results
-    pub limit: Option<usize>,
-    /// Offset for pagination
-    pub offset: Option<usize>,
-}
-
-/// Query parameters for listing logs
-#[derive(Debug, Deserialize)]
-pub struct ListLogsQuery {
-    /// Filter by service name
-    pub service: Option<String>,
-    /// Filter by severity level
-    pub level: Option<String>,
-    /// Maximum number of results
-    pub limit: Option<usize>,
-}
-
-/// Response for trace list
-#[derive(Debug, Serialize)]
-pub struct TraceListResponse {
-    /// Trace summaries returned by the query.
-    pub traces: Vec<TraceInfo>,
-    /// Total count of traces in the response.
-    pub total: usize,
-}
-
-/// Trace information for list view
-#[derive(Debug, Serialize)]
-pub struct TraceInfo {
-    /// Trace identifier.
-    pub trace_id: String,
-    /// Service name associated with the root span, if known.
-    pub service_name: Option<String>,
-    /// Total trace duration in milliseconds.
-    pub duration_ms: f64,
-    /// Number of spans in the trace.
-    pub span_count: usize,
-    /// True when at least one span has error status.
-    pub has_errors: bool,
-    /// Trace start time as nanoseconds since the Unix epoch.
-    pub start_time: Option<i64>,
-    /// Operation name of the root span, if any.
-    pub root_span_name: Option<String>,
-    /// Kind of the root span, if any.
-    pub root_span_kind: Option<faze::SpanKind>,
-}
-
-/// Query parameters for generic listing endpoints.
-#[derive(Deserialize)]
-pub struct ListParams {
-    service: Option<String>,
-    limit: Option<usize>,
-}
-
-impl From<&faze::Trace> for TraceInfo {
-    fn from(trace: &faze::Trace) -> Self {
-        let root_span = trace.root_span();
-
-        Self {
-            trace_id: trace.trace_id.clone(),
-            service_name: trace.service_name.clone(),
-            duration_ms: trace.duration_ms(),
-            span_count: trace.span_count(),
-            has_errors: trace.has_errors(),
-            start_time: trace.start_time().and_then(|dt| dt.timestamp_nanos_opt()),
-            root_span_name: root_span.map(|s| s.name.clone()),
-            root_span_kind: root_span.map(|s| s.kind),
-        }
-    }
-}
+use tracing::info;
 
 /// GET /api/traces - List all traces
 pub async fn list_traces(
     State(state): State<AppState>,
     Query(params): Query<ListTracesQuery>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/traces - params: {:?}", params);
 
     let limit = params.limit.unwrap_or(100).min(1000); // Max 1000 traces
-
-    match state
+    let traces = state
         .storage
-        .list_traces(params.service.as_deref(), Some(limit))
-    {
-        Ok(traces) => {
-            let mut filtered_traces: Vec<_> = traces
-                .iter()
-                .filter(|t| {
-                    let duration = t.duration_ms();
+        .list_traces(params.service.as_deref(), Some(limit))?;
 
-                    if let Some(min) = params.min_duration
-                        && duration < min
-                    {
-                        return false;
-                    }
+    let mut filtered_traces: Vec<_> = traces
+        .iter()
+        .filter(|t| {
+            let duration = t.duration_ms();
 
-                    if let Some(max) = params.max_duration
-                        && duration > max
-                    {
-                        return false;
-                    }
-
-                    true
-                })
-                .map(TraceInfo::from)
-                .collect();
-
-            if let Some(offset) = params.offset {
-                filtered_traces = filtered_traces.into_iter().skip(offset).collect();
+            if let Some(min) = params.min_duration
+                && duration < min
+            {
+                return false;
             }
 
-            let total = filtered_traces.len();
+            if let Some(max) = params.max_duration
+                && duration > max
+            {
+                return false;
+            }
 
-            Json(TraceListResponse {
-                traces: filtered_traces,
-                total,
-            })
-            .into_response()
-        }
-        Err(e) => {
-            error!("Failed to list traces: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": format!("Failed to list traces: {e}")
-                })),
-            )
-                .into_response()
-        }
+            true
+        })
+        .map(TraceInfo::from)
+        .collect();
+
+    if let Some(offset) = params.offset {
+        filtered_traces = filtered_traces.into_iter().skip(offset).collect();
     }
+
+    let total = filtered_traces.len();
+
+    Ok(Json(TraceListResponse {
+        traces: filtered_traces,
+        total,
+    }))
 }
 
 /// GET /api/traces/:id - Get a specific trace with all spans
 pub async fn get_trace(
     State(state): State<AppState>,
     Path(trace_id): Path<String>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/traces/{}", trace_id);
 
-    match state.storage.get_trace_by_id(&trace_id) {
-        Ok(trace) => Json(trace).into_response(),
-        Err(faze::StorageError::NotFound(_)) => (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({
-                "error": format!("Trace not found: {trace_id}")
-            })),
-        )
-            .into_response(),
-        Err(e) => {
-            error!("Failed to get trace {}: {}", trace_id, e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": format!("Failed to get trace: {e}")
-                })),
-            )
-                .into_response()
-        }
-    }
+    let trace = state.storage.get_trace_by_id(&trace_id)?;
+    Ok(Json(trace))
 }
 
 /// GET /api/logs - List logs
 pub async fn list_logs(
     State(state): State<AppState>,
     Query(params): Query<ListLogsQuery>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/logs - params: {:?}", params);
 
     let limit = params.limit.unwrap_or(100).min(1000);
-
-    match state
+    let logs = state
         .storage
-        .list_logs(params.service.as_deref(), Some(limit))
-    {
-        Ok(logs) => Json(logs).into_response(),
-        Err(e) => {
-            error!("Failed to list logs: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": format!("Failed to list logs: {e}")
-                })),
-            )
-                .into_response()
-        }
-    }
+        .list_logs(params.service.as_deref(), Some(limit))?;
+
+    Ok(Json(logs))
 }
 
 /// GET /api/services - List unique service names
-pub async fn list_services(State(state): State<AppState>) -> impl IntoResponse {
+pub async fn list_services(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/services");
 
-    match state.storage.list_traces(None, Some(1000)) {
-        Ok(traces) => {
-            let mut services: Vec<String> =
-                traces.into_iter().filter_map(|t| t.service_name).collect();
+    let traces = state.storage.list_traces(None, Some(1000))?;
+    let mut services: Vec<String> = traces.into_iter().filter_map(|t| t.service_name).collect();
 
-            services.sort();
-            services.dedup();
+    services.sort();
+    services.dedup();
 
-            Json(serde_json::json!({
-                "services": services
-            }))
-            .into_response()
-        }
-        Err(e) => {
-            error!("Failed to list services: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": format!("Failed to list services: {e}")
-                })),
-            )
-                .into_response()
-        }
-    }
+    Ok(Json(serde_json::json!({
+        "services": services
+    })))
 }
 
 /// GET /api/metrics - List metrics
 pub async fn list_metrics(
     State(state): State<AppState>,
-    Query(params): Query<ListParams>,
-) -> impl IntoResponse {
+    Query(params): Query<ListMetricsQuery>,
+) -> Result<impl IntoResponse, ApiError> {
+    info!("GET /api/metrics - params: {:?}", params);
+
+    let limit = params.limit.unwrap_or(100).min(1000);
     let metrics = state
         .storage
-        .list_metrics(params.service.as_deref(), params.limit)
-        .unwrap_or_default();
+        .list_metrics(params.service.as_deref(), Some(limit))?;
 
-    Json(serde_json::json!({
+    Ok(Json(serde_json::json!({
         "metrics": metrics
-    }))
+    })))
 }
 
 /// GET /health - Health check endpoint
@@ -288,7 +144,10 @@ pub async fn get_project_info() -> impl IntoResponse {
 #[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
+    use axum::http::StatusCode;
+    use faze::Storage;
     use faze::models::{Attributes, Span, SpanKind, Status};
+    use std::sync::Arc;
 
     #[tokio::test]
     async fn test_health_check() {
@@ -536,7 +395,6 @@ mod tests {
 
         let query = ListLogsQuery {
             service: None,
-            level: None,
             limit: None,
         };
 
