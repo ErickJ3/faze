@@ -1,75 +1,50 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Span } from "@/types";
 import { formatDurationCompact } from "@/lib/formatters";
+import {
+  buildSpanTree,
+  collectParentIds,
+  type SpanNode,
+} from "../lib/span-tree";
 import { SpanDetailSheet } from "./span-detail-sheet";
 
 interface SpanWaterfallProps {
   spans: Span[];
 }
 
-interface SpanNode extends Span {
-  children: SpanNode[];
-  depth: number;
-}
+/** Shared column template so every row lines up on one time gutter. */
+const GRID_COLS = "grid grid-cols-[minmax(280px,40%)_1fr]";
 
-function buildSpanTree(spans: Span[]): {
-  roots: SpanNode[];
-  minTime: number;
-  maxTime: number;
-} {
-  const spanMap = new Map<string, SpanNode>();
-  const roots: SpanNode[] = [];
+/** Fractions of total duration where axis ticks and gridlines sit. */
+const TICK_FRACTIONS = [0, 0.25, 0.5, 0.75, 1];
 
-  spans.forEach((span) => {
-    spanMap.set(span.span_id, { ...span, children: [], depth: 0 });
-  });
-
-  const sorted = [...spans].sort(
-    (a, b) => a.start_time_unix_nano - b.start_time_unix_nano,
+function EmptyWaterfall({ message }: { message: string }) {
+  return (
+    <div className="flex items-center justify-center h-32 border border-border">
+      <p className="text-sm text-foreground/50">{message}</p>
+    </div>
   );
-
-  sorted.forEach((span) => {
-    const node = spanMap.get(span.span_id)!;
-    if (span.parent_span_id && span.parent_span_id !== "") {
-      const parent = spanMap.get(span.parent_span_id);
-      if (parent) {
-        parent.children.push(node);
-        node.depth = parent.depth + 1;
-      } else {
-        roots.push(node);
-      }
-    } else {
-      roots.push(node);
-    }
-  });
-
-  const startTimes = spans
-    .map((s) => s.start_time_unix_nano)
-    .filter((t) => t > 0);
-  const endTimes = spans.map((s) => s.end_time_unix_nano).filter((t) => t > 0);
-
-  const minTime = Math.min(...startTimes);
-  const maxTime = Math.max(...endTimes);
-
-  return { roots, minTime, maxTime };
 }
 
 interface SpanRowProps {
   node: SpanNode;
   minTime: number;
   totalDuration: number;
-  onSpanClick: (span: Span) => void;
-  expanded: Set<string>;
+  showService: boolean;
+  collapsed: Set<string>;
   onToggle: (spanId: string) => void;
+  onSpanClick: (span: Span) => void;
 }
 
 function SpanRow({
   node,
   minTime,
   totalDuration,
-  onSpanClick,
-  expanded,
+  showService,
+  collapsed,
   onToggle,
+  onSpanClick,
 }: SpanRowProps) {
   const duration =
     (node.end_time_unix_nano - node.start_time_unix_nano) / 1_000_000;
@@ -78,27 +53,33 @@ function SpanRow({
   const width = (duration / totalDuration) * 100;
   const hasError = node.status.code === "ERROR";
   const hasChildren = node.children.length > 0;
-  const isExpanded = expanded.has(node.span_id);
+  const isExpanded = !collapsed.has(node.span_id);
 
   return (
     <>
-      <div className="flex items-center border-b border-border hover:bg-card/30 transition-colors">
+      <div
+        className={`${GRID_COLS} border-b border-border hover:bg-card/30 transition-colors`}
+      >
         <div
-          className="flex-1 flex items-center gap-2 py-2 px-3 min-w-0"
+          className="flex items-center gap-2 py-2 pr-3 min-w-0"
           style={{ paddingLeft: `${node.depth * 20 + 12}px` }}
         >
-          {hasChildren && (
+          {hasChildren ? (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggle(node.span_id);
-              }}
-              className="text-foreground/50 hover:text-foreground w-4 h-4 flex items-center justify-center"
+              onClick={() => onToggle(node.span_id)}
+              aria-expanded={isExpanded}
+              aria-label={`${isExpanded ? "Collapse" : "Expand"} ${node.name}`}
+              className="text-foreground/50 hover:text-foreground w-4 h-4 flex items-center justify-center shrink-0"
             >
-              {isExpanded ? "▼" : "▶"}
+              {isExpanded ? (
+                <ChevronDown size={12} />
+              ) : (
+                <ChevronRight size={12} />
+              )}
             </button>
+          ) : (
+            <div className="w-4 shrink-0" />
           )}
-          {!hasChildren && <div className="w-4" />}
 
           <button
             onClick={() => onSpanClick(node)}
@@ -107,135 +88,100 @@ function SpanRow({
             <div className="flex items-center gap-2">
               <span className="text-sm font-mono truncate">{node.name}</span>
               {hasError && (
-                <span className="text-xs px-1 bg-red-500/10 text-red-500">
+                <span className="text-xs px-1 bg-destructive/10 text-destructive shrink-0">
                   ERROR
+                </span>
+              )}
+              {showService && node.service_name && (
+                <span className="text-xs px-1 border border-border text-foreground/50 truncate shrink-0 max-w-32">
+                  {node.service_name}
                 </span>
               )}
             </div>
           </button>
 
-          <span className="text-xs font-mono text-foreground/50 whitespace-nowrap ml-2">
+          <span className="text-xs font-mono text-foreground/50 whitespace-nowrap">
             {formatDurationCompact(duration)}
           </span>
         </div>
 
-        <div className="w-1/2 px-3 py-2 relative h-8">
-          <div className="absolute inset-y-0 left-3 right-3 flex items-center">
-            <div
-              className={`h-4 ${hasError ? "bg-red-500" : "bg-primary"} hover:opacity-80 transition-opacity cursor-pointer`}
-              style={{
-                marginLeft: `${startOffset}%`,
-                width: `${Math.max(width, 0.5)}%`,
-              }}
-              onClick={() => onSpanClick(node)}
-            />
-          </div>
+        <div className="relative h-9">
+          <button
+            onClick={() => onSpanClick(node)}
+            aria-label={`${node.name}, ${formatDurationCompact(duration)}`}
+            className={`absolute top-1/2 -translate-y-1/2 h-4 ${
+              hasError ? "bg-destructive" : "bg-primary"
+            } hover:opacity-80 transition-opacity`}
+            style={{
+              left: `${startOffset}%`,
+              width: `${Math.max(width, 0.5)}%`,
+            }}
+          />
         </div>
       </div>
 
-      {hasChildren && isExpanded && (
-        <>
-          {node.children.map((child) => (
-            <SpanRow
-              key={child.span_id}
-              node={child}
-              minTime={minTime}
-              totalDuration={totalDuration}
-              onSpanClick={onSpanClick}
-              expanded={expanded}
-              onToggle={onToggle}
-            />
-          ))}
-        </>
-      )}
+      {hasChildren &&
+        isExpanded &&
+        node.children.map((child) => (
+          <SpanRow
+            key={child.span_id}
+            node={child}
+            minTime={minTime}
+            totalDuration={totalDuration}
+            showService={showService}
+            collapsed={collapsed}
+            onToggle={onToggle}
+            onSpanClick={onSpanClick}
+          />
+        ))}
     </>
   );
 }
 
 export function SpanWaterfall({ spans }: SpanWaterfallProps) {
   const [selectedSpan, setSelectedSpan] = useState<Span | null>(null);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
-  const spanTree = useMemo(() => {
-    if (!spans || spans.length === 0) return null;
-    try {
-      return buildSpanTree(spans);
-    } catch {
-      return null;
-    }
-  }, [spans]);
+  const spanTree = useMemo(
+    () => (spans && spans.length > 0 ? buildSpanTree(spans) : null),
+    [spans],
+  );
 
-  useEffect(() => {
-    if (!spanTree) return;
-
-    const allSpanIds = new Set<string>();
-    const traverse = (node: SpanNode) => {
-      if (node.children.length > 0) {
-        allSpanIds.add(node.span_id);
-        node.children.forEach(traverse);
-      }
-    };
-    spanTree.roots.forEach(traverse);
-    setExpanded(allSpanIds);
-  }, [spanTree]);
-
-  if (!spans || spans.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-32 border border-border">
-        <p className="text-sm text-foreground/50">No spans to display</p>
-      </div>
-    );
-  }
+  const showService = useMemo(
+    () => new Set(spans?.map((s) => s.service_name).filter(Boolean)).size > 1,
+    [spans],
+  );
 
   if (!spanTree) {
-    return (
-      <div className="flex items-center justify-center h-32 border border-border">
-        <p className="text-sm text-foreground/50">Error displaying waterfall</p>
-      </div>
-    );
+    return <EmptyWaterfall message="No spans to display" />;
   }
 
-  try {
-    const { roots, minTime, maxTime } = spanTree;
-    const totalDuration = (maxTime - minTime) / 1_000_000;
+  const { roots, minTime, maxTime } = spanTree;
+  const totalDuration = (maxTime - minTime) / 1_000_000;
 
-    if (!isFinite(totalDuration) || totalDuration <= 0) {
-      return (
-        <div className="flex items-center justify-center h-32 border border-border">
-          <p className="text-sm text-foreground/50">Invalid span timing data</p>
-        </div>
-      );
-    }
+  if (!isFinite(totalDuration) || totalDuration <= 0) {
+    return <EmptyWaterfall message="Invalid span timing data" />;
+  }
 
-    const toggleExpand = (spanId: string) => {
-      const newExpanded = new Set(expanded);
-      if (newExpanded.has(spanId)) {
-        newExpanded.delete(spanId);
+  const toggleExpand = (spanId: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(spanId)) {
+        next.delete(spanId);
       } else {
-        newExpanded.add(spanId);
+        next.add(spanId);
       }
-      setExpanded(newExpanded);
-    };
+      return next;
+    });
+  };
 
-    const expandAll = () => {
-      const allSpanIds = new Set<string>();
-      const traverse = (node: SpanNode) => {
-        if (node.children.length > 0) {
-          allSpanIds.add(node.span_id);
-          node.children.forEach(traverse);
-        }
-      };
-      roots.forEach(traverse);
-      setExpanded(allSpanIds);
-    };
+  const expandAll = () => setCollapsed(new Set());
+  const collapseAll = () => setCollapsed(collectParentIds(roots));
 
-    const collapseAll = () => {
-      setExpanded(new Set());
-    };
-
-    return (
-      <>
-        <div className="border border-border">
+  return (
+    <>
+      <div className="border border-border">
+        <div className="sticky top-0 z-10 bg-background">
           <div className="flex items-center justify-between border-b border-border px-3 py-2 bg-card/20">
             <div className="flex items-center gap-3">
               <span className="text-xs font-mono text-foreground/70">
@@ -263,45 +209,71 @@ export function SpanWaterfall({ spans }: SpanWaterfallProps) {
             </div>
           </div>
 
-          <div className="flex border-b border-border bg-card/10">
-            <div className="flex-1 px-3 py-2">
-              <span className="text-xs font-mono text-foreground/50">SPAN</span>
-            </div>
-            <div className="w-1/2 px-3 py-2">
+          <div className={`${GRID_COLS} border-b border-border bg-card/10`}>
+            <div className="px-3 py-2">
               <span className="text-xs font-mono text-foreground/50">
-                TIMELINE
+                SPAN
               </span>
             </div>
-          </div>
-
-          <div>
-            {roots.map((node) => (
-              <SpanRow
-                key={node.span_id}
-                node={node}
-                minTime={minTime}
-                totalDuration={totalDuration}
-                onSpanClick={setSelectedSpan}
-                expanded={expanded}
-                onToggle={toggleExpand}
-              />
-            ))}
+            <div className="relative py-2 text-xs font-mono text-foreground/50">
+              {TICK_FRACTIONS.map((fraction) => (
+                <span
+                  key={fraction}
+                  className="absolute whitespace-nowrap"
+                  style={{
+                    left: `${fraction * 100}%`,
+                    transform:
+                      fraction === 0
+                        ? "translateX(2px)"
+                        : fraction === 1
+                          ? "translateX(calc(-100% - 2px))"
+                          : "translateX(-50%)",
+                  }}
+                >
+                  {formatDurationCompact(totalDuration * fraction)}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
-        <SpanDetailSheet
-          span={selectedSpan}
-          open={!!selectedSpan}
-          onClose={() => setSelectedSpan(null)}
-        />
-      </>
-    );
-  } catch (error) {
-    console.error("Error rendering waterfall:", error);
-    return (
-      <div className="flex items-center justify-center h-32 border border-border">
-        <p className="text-sm text-foreground/50">Error displaying waterfall</p>
+        <div className="relative">
+          <div
+            className={`${GRID_COLS} absolute inset-0 pointer-events-none`}
+            aria-hidden="true"
+          >
+            <div />
+            <div className="relative">
+              {TICK_FRACTIONS.slice(1, -1).map((fraction) => (
+                <div
+                  key={fraction}
+                  className="absolute inset-y-0 border-l border-border/40"
+                  style={{ left: `${fraction * 100}%` }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {roots.map((node) => (
+            <SpanRow
+              key={node.span_id}
+              node={node}
+              minTime={minTime}
+              totalDuration={totalDuration}
+              showService={showService}
+              collapsed={collapsed}
+              onToggle={toggleExpand}
+              onSpanClick={setSelectedSpan}
+            />
+          ))}
+        </div>
       </div>
-    );
-  }
+
+      <SpanDetailSheet
+        span={selectedSpan}
+        open={!!selectedSpan}
+        onClose={() => setSelectedSpan(null)}
+      />
+    </>
+  );
 }
