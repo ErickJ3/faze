@@ -8,7 +8,8 @@ pub mod models;
 pub mod storage;
 
 pub use models::{
-    AttributeValue, Attributes, Log, Metric, MetricDataPoint, MetricType, Resource, SeverityLevel,
-    Span, SpanKind, Status, StatusCode, Trace,
+    AggregationTemporality, AttributeValue, Attributes, Distribution, Exemplar,
+    InstrumentationScope, Log, Metric, MetricDataPoint, MetricType, QuantileValue, Resource,
+    SeverityLevel, Span, SpanEvent, SpanKind, SpanLink, Status, StatusCode, Trace,
 };
 pub use storage::{Storage, StorageError, detect_project_root, get_data_dir, get_project_db_path};

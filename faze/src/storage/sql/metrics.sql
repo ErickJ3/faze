@@ -9,7 +9,12 @@ CREATE TABLE IF NOT EXISTS metrics (
     start_time_unix_nano INTEGER,
     value REAL NOT NULL,
     attributes TEXT NOT NULL,
-    service_name TEXT
+    service_name TEXT,
+    is_monotonic INTEGER,
+    distribution TEXT,
+    exemplars TEXT,
+    resource_attributes TEXT,
+    scope TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_metrics_name ON metrics(name);

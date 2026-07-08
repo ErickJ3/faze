@@ -1,8 +1,15 @@
-use crate::convert::{bytes_to_hex, convert_attributes, resource_service_name};
-use crate::proto::opentelemetry::proto::trace::v1::{
-    ResourceSpans, Span, SpanKind as OtlpSpanKind, Status, StatusCode as OtlpSpanStatusCode,
+use crate::convert::{
+    ResourceContext, bytes_to_hex, convert_attributes, convert_resource_context, convert_scope,
+    id_to_hex,
 };
-use faze::models::{Span as FazeSpan, SpanKind, Status as FazeStatus, StatusCode};
+use crate::proto::opentelemetry::proto::trace::v1::{
+    Event, Link, ResourceSpans, Span, SpanKind as OtlpSpanKind, Status,
+    StatusCode as OtlpSpanStatusCode,
+};
+use faze::models::{
+    InstrumentationScope as FazeScope, Span as FazeSpan, SpanEvent, SpanKind, SpanLink,
+    Status as FazeStatus, StatusCode,
+};
 
 /// Convert OTLP `SpanKind` to internal `SpanKind`
 fn convert_span_kind(kind: i32) -> SpanKind {
@@ -16,20 +23,49 @@ fn convert_span_kind(kind: i32) -> SpanKind {
     }
 }
 
-/// Convert OTLP `Span` to internal `Span`
+/// Convert OTLP span `Event` to internal `SpanEvent`
 #[allow(clippy::cast_possible_wrap)]
-fn convert_span(span: &Span, service_name: Option<String>) -> FazeSpan {
-    let span_id = bytes_to_hex(&span.span_id);
-    let trace_id = bytes_to_hex(&span.trace_id);
-    let parent_span_id = if span.parent_span_id.is_empty() {
+fn convert_span_event(event: &Event) -> SpanEvent {
+    SpanEvent {
+        time_unix_nano: event.time_unix_nano as i64,
+        name: event.name.clone(),
+        attributes: convert_attributes(&event.attributes),
+        dropped_attributes_count: event.dropped_attributes_count,
+    }
+}
+
+/// Convert OTLP span `Link` to internal `SpanLink`
+fn convert_span_link(link: &Link) -> SpanLink {
+    let trace_state = if link.trace_state.is_empty() {
         None
     } else {
-        Some(bytes_to_hex(&span.parent_span_id))
+        Some(link.trace_state.clone())
     };
+    SpanLink {
+        trace_id: bytes_to_hex(&link.trace_id),
+        span_id: bytes_to_hex(&link.span_id),
+        trace_state,
+        attributes: convert_attributes(&link.attributes),
+        dropped_attributes_count: link.dropped_attributes_count,
+    }
+}
+
+/// Convert OTLP `Span` to internal `Span`
+#[allow(clippy::cast_possible_wrap)]
+fn convert_span(span: &Span, resource: &ResourceContext, scope: Option<&FazeScope>) -> FazeSpan {
+    let span_id = bytes_to_hex(&span.span_id);
+    let trace_id = bytes_to_hex(&span.trace_id);
+    let parent_span_id = id_to_hex(&span.parent_span_id);
 
     let attributes = convert_attributes(&span.attributes);
     let kind = convert_span_kind(span.kind);
     let status = span.status.as_ref().map(convert_status).unwrap_or_default();
+
+    let trace_state = if span.trace_state.is_empty() {
+        None
+    } else {
+        Some(span.trace_state.clone())
+    };
 
     FazeSpan::new(
         span_id,
@@ -41,8 +77,18 @@ fn convert_span(span: &Span, service_name: Option<String>) -> FazeSpan {
         span.end_time_unix_nano as i64,
         attributes,
         status,
-        service_name,
+        resource.service_name.clone(),
     )
+    .with_events(span.events.iter().map(convert_span_event).collect())
+    .with_links(span.links.iter().map(convert_span_link).collect())
+    .with_trace_state(trace_state)
+    .with_dropped_counts(
+        span.dropped_attributes_count,
+        span.dropped_events_count,
+        span.dropped_links_count,
+    )
+    .with_resource_attributes(resource.attributes.clone())
+    .with_scope(scope.cloned())
 }
 
 /// Convert OTLP `ResourceSpans` to list of internal `Span`s
@@ -51,11 +97,12 @@ pub fn convert_resource_spans(resource_spans: &[ResourceSpans]) -> Vec<FazeSpan>
     let mut spans = Vec::new();
 
     for rs in resource_spans {
-        let service_name = resource_service_name(rs.resource.as_ref());
+        let resource = convert_resource_context(rs.resource.as_ref());
 
         for scope_spans in &rs.scope_spans {
+            let scope = convert_scope(scope_spans.scope.as_ref());
             for span in &scope_spans.spans {
-                spans.push(convert_span(span, service_name.clone()));
+                spans.push(convert_span(span, &resource, scope.as_ref()));
             }
         }
     }
@@ -83,6 +130,14 @@ fn convert_status(status: &Status) -> FazeStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use faze::models::Attributes;
+
+    fn test_resource_ctx() -> ResourceContext {
+        ResourceContext {
+            service_name: Some("test-service".to_string()),
+            attributes: Attributes::new(),
+        }
+    }
     use crate::proto::opentelemetry::proto::{
         common::v1::{AnyValue, KeyValue, any_value},
         resource::v1::Resource,
@@ -204,6 +259,118 @@ mod tests {
     }
 
     #[test]
+    fn test_convert_span_events_links_and_state() {
+        let span = Span {
+            trace_id: vec![1; 16],
+            span_id: vec![2; 8],
+            parent_span_id: vec![],
+            name: "with-fidelity".to_string(),
+            kind: OtlpSpanKind::Internal as i32,
+            start_time_unix_nano: 1_000,
+            end_time_unix_nano: 2_000,
+            attributes: vec![],
+            dropped_attributes_count: 1,
+            events: vec![Event {
+                time_unix_nano: 1_500,
+                name: "exception".to_string(),
+                attributes: vec![KeyValue {
+                    key: "exception.message".to_string(),
+                    value: Some(AnyValue {
+                        value: Some(any_value::Value::StringValue("boom".to_string())),
+                    }),
+                }],
+                dropped_attributes_count: 4,
+            }],
+            dropped_events_count: 2,
+            links: vec![Link {
+                trace_id: vec![0xaa; 16],
+                span_id: vec![0xbb; 8],
+                trace_state: "vendor=1".to_string(),
+                flags: 0,
+                attributes: vec![],
+                dropped_attributes_count: 0,
+            }],
+            dropped_links_count: 3,
+            status: None,
+            trace_state: "vendor=2".to_string(),
+            flags: 0,
+        };
+
+        let result = convert_span(&span, &test_resource_ctx(), None);
+
+        assert_eq!(result.events.len(), 1);
+        assert_eq!(result.events[0].name, "exception");
+        assert_eq!(result.events[0].time_unix_nano, 1_500);
+        assert_eq!(
+            result.events[0].attributes.get_string("exception.message"),
+            Some("boom")
+        );
+        assert_eq!(result.events[0].dropped_attributes_count, 4);
+
+        assert_eq!(result.links.len(), 1);
+        assert_eq!(result.links[0].trace_id, "aa".repeat(16));
+        assert_eq!(result.links[0].span_id, "bb".repeat(8));
+        assert_eq!(result.links[0].trace_state, Some("vendor=1".to_string()));
+
+        assert_eq!(result.trace_state, Some("vendor=2".to_string()));
+        assert_eq!(result.dropped_attributes_count, 1);
+        assert_eq!(result.dropped_events_count, 2);
+        assert_eq!(result.dropped_links_count, 3);
+    }
+
+    #[test]
+    fn test_convert_resource_spans_carries_resource_and_scope() {
+        use crate::proto::opentelemetry::proto::common::v1::InstrumentationScope;
+
+        let resource_spans = vec![ResourceSpans {
+            resource: Some(Resource {
+                attributes: vec![
+                    KeyValue {
+                        key: "service.name".to_string(),
+                        value: Some(AnyValue {
+                            value: Some(any_value::Value::StringValue("svc".to_string())),
+                        }),
+                    },
+                    KeyValue {
+                        key: "service.version".to_string(),
+                        value: Some(AnyValue {
+                            value: Some(any_value::Value::StringValue("3.1".to_string())),
+                        }),
+                    },
+                ],
+                dropped_attributes_count: 0,
+            }),
+            scope_spans: vec![ScopeSpans {
+                scope: Some(InstrumentationScope {
+                    name: "my-lib".to_string(),
+                    version: "0.9".to_string(),
+                    attributes: vec![],
+                    dropped_attributes_count: 0,
+                }),
+                spans: vec![Span {
+                    trace_id: vec![1; 16],
+                    span_id: vec![2; 8],
+                    name: "op".to_string(),
+                    ..Default::default()
+                }],
+                schema_url: String::new(),
+            }],
+            schema_url: String::new(),
+        }];
+
+        let spans = convert_resource_spans(&resource_spans);
+        assert_eq!(spans.len(), 1);
+        assert_eq!(spans[0].service_name, Some("svc".to_string()));
+        assert_eq!(
+            spans[0].resource_attributes.get_string("service.version"),
+            Some("3.1")
+        );
+        let scope = spans[0].scope.as_ref().unwrap();
+        assert_eq!(scope.name, "my-lib");
+        assert_eq!(scope.version, Some("0.9".to_string()));
+    }
+
+    #[test]
     fn test_convert_span_with_parent() {
         let span = Span {
             trace_id: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
@@ -224,9 +391,10 @@ mod tests {
                 message: String::new(),
             }),
             trace_state: String::new(),
+            flags: 0,
         };
 
-        let result = convert_span(&span, Some("test-service".to_string()));
+        let result = convert_span(&span, &test_resource_ctx(), None);
         assert_eq!(result.parent_span_id, Some("090a0b0c0d0e0f10".to_string()));
         assert!(!result.is_root());
     }
@@ -249,9 +417,10 @@ mod tests {
             dropped_links_count: 0,
             status: None,
             trace_state: String::new(),
+            flags: 0,
         };
 
-        let result = convert_span(&span, Some("test-service".to_string()));
+        let result = convert_span(&span, &test_resource_ctx(), None);
         assert_eq!(result.parent_span_id, None);
         assert!(result.is_root());
     }
@@ -290,9 +459,10 @@ mod tests {
                 message: String::new(),
             }),
             trace_state: String::new(),
+            flags: 0,
         };
 
-        let result = convert_span(&span, Some("test-service".to_string()));
+        let result = convert_span(&span, &test_resource_ctx(), None);
         assert_eq!(result.attributes.get_string("http.method"), Some("POST"));
         assert_eq!(result.attributes.get_int("http.status_code"), Some(200));
     }
@@ -328,6 +498,7 @@ mod tests {
                         dropped_links_count: 0,
                         status: None,
                         trace_state: String::new(),
+                        flags: 0,
                     }],
                     schema_url: String::new(),
                 },
@@ -349,6 +520,7 @@ mod tests {
                         dropped_links_count: 0,
                         status: None,
                         trace_state: String::new(),
+                        flags: 0,
                     }],
                     schema_url: String::new(),
                 },
@@ -395,6 +567,7 @@ mod tests {
                         dropped_links_count: 0,
                         status: None,
                         trace_state: String::new(),
+                        flags: 0,
                     }],
                     schema_url: String::new(),
                 }],
@@ -428,6 +601,7 @@ mod tests {
                         dropped_links_count: 0,
                         status: None,
                         trace_state: String::new(),
+                        flags: 0,
                     }],
                     schema_url: String::new(),
                 }],
@@ -470,6 +644,7 @@ mod tests {
                     dropped_links_count: 0,
                     status: None,
                     trace_state: String::new(),
+                    flags: 0,
                 }],
                 schema_url: String::new(),
             }],

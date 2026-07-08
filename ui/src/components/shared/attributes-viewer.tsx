@@ -6,6 +6,12 @@ interface AttributesViewerProps {
   title?: string;
 }
 
+function isMapValue(
+  value: AttributeValue,
+): value is { [key: string]: AttributeValue } {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 function renderAttributeValue(value: AttributeValue): string {
   if (
     typeof value === "string" ||
@@ -15,22 +21,12 @@ function renderAttributeValue(value: AttributeValue): string {
     return String(value);
   }
 
-  if (value && typeof value === "object" && "type" in value) {
-    switch (value.type) {
-      case "string":
-        return value.value;
-      case "int":
-      case "double":
-        return String(value.value);
-      case "bool":
-        return value.value ? "true" : "false";
-      case "bytes":
-        return `[${value.value.length} bytes]`;
-      case "array":
-        return `[${value.value.length} items]`;
-      default:
-        return "unknown";
-    }
+  if (Array.isArray(value)) {
+    return `[${value.length} items]`;
+  }
+
+  if (isMapValue(value)) {
+    return `{${Object.keys(value).length} entries}`;
   }
 
   return String(value);
@@ -41,32 +37,21 @@ function getValueType(value: AttributeValue): string {
   if (typeof value === "number")
     return Number.isInteger(value) ? "int" : "double";
   if (typeof value === "boolean") return "bool";
-  if (value && typeof value === "object" && "type" in value) return value.type;
   if (Array.isArray(value)) return "array";
+  if (isMapValue(value)) return "map";
   return "unknown";
 }
 
-function isArrayValue(value: AttributeValue): boolean {
-  if (Array.isArray(value)) return true;
-  if (
-    value &&
-    typeof value === "object" &&
-    "type" in value &&
-    value.type === "array"
-  )
-    return true;
-  return false;
+function isExpandable(value: AttributeValue): boolean {
+  return Array.isArray(value) || isMapValue(value);
 }
 
-function getArrayItems(value: AttributeValue): AttributeValue[] {
-  if (Array.isArray(value)) return value;
-  if (
-    value &&
-    typeof value === "object" &&
-    "type" in value &&
-    value.type === "array"
-  ) {
-    return value.value;
+function getChildEntries(value: AttributeValue): [string, AttributeValue][] {
+  if (Array.isArray(value)) {
+    return value.map((item, i) => [`[${i}]`, item]);
+  }
+  if (isMapValue(value)) {
+    return Object.entries(value);
   }
   return [];
 }
@@ -98,9 +83,10 @@ export function AttributesViewer({
       <div className="border border-border">
         {entries.map(([key, value], index) => {
           const isExpanded = expandedKeys.has(key);
-          const isArray = isArrayValue(value);
-          const arrayItems = isArray ? getArrayItems(value) : [];
+          const expandable = isExpandable(value);
+          const childEntries = expandable ? getChildEntries(value) : [];
           const valueType = getValueType(value);
+          const collapsedLabel = renderAttributeValue(value);
 
           return (
             <div
@@ -118,14 +104,14 @@ export function AttributesViewer({
                     </span>
                   </div>
                   <div className="text-xs font-mono text-foreground mt-1">
-                    {isArray && !isExpanded ? (
+                    {expandable && !isExpanded ? (
                       <button
                         onClick={() => toggleExpand(key)}
                         className="text-foreground/50 hover:text-foreground"
                       >
-                        [{arrayItems.length} items] (click to expand)
+                        {collapsedLabel} (click to expand)
                       </button>
-                    ) : isArray && isExpanded ? (
+                    ) : expandable && isExpanded ? (
                       <div>
                         <button
                           onClick={() => toggleExpand(key)}
@@ -134,18 +120,15 @@ export function AttributesViewer({
                           (click to collapse)
                         </button>
                         <div className="pl-4 space-y-1 border-l-2 border-foreground/10">
-                          {arrayItems.map((item, i) => (
-                            <div
-                              key={i.toString()}
-                              className="text-foreground/70"
-                            >
-                              [{i}]: {renderAttributeValue(item)}
+                          {childEntries.map(([childKey, item]) => (
+                            <div key={childKey} className="text-foreground/70">
+                              {childKey}: {renderAttributeValue(item)}
                             </div>
                           ))}
                         </div>
                       </div>
                     ) : (
-                      renderAttributeValue(value)
+                      collapsedLabel
                     )}
                   </div>
                 </div>

@@ -48,6 +48,10 @@ mod tests {
         assert_eq!(SeverityLevel::Info.as_db_str(), "Info");
         assert_eq!(SeverityLevel::Fatal4.as_db_str(), "Fatal4");
         assert_eq!(MetricType::Histogram.as_db_str(), "Histogram");
+        assert_eq!(
+            MetricType::ExponentialHistogram.as_db_str(),
+            "ExponentialHistogram"
+        );
         assert_eq!(AggregationTemporality::Cumulative.as_db_str(), "Cumulative");
     }
 

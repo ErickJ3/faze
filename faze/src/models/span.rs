@@ -1,5 +1,6 @@
 use super::attributes::Attributes;
 use super::db_enum::impl_db_str;
+use super::scope::InstrumentationScope;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -91,6 +92,44 @@ impl Default for Status {
     }
 }
 
+/// Timed event attached to a span (e.g., an exception)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SpanEvent {
+    /// Event timestamp (nanoseconds since epoch)
+    pub time_unix_nano: i64,
+    /// Event name
+    pub name: String,
+    /// Event attributes
+    #[serde(default, skip_serializing_if = "Attributes::is_empty")]
+    pub attributes: Attributes,
+    /// Attributes dropped by the producer
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    pub dropped_attributes_count: u32,
+}
+
+/// Link from a span to another span, possibly in a different trace
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SpanLink {
+    /// Linked trace ID (hex)
+    pub trace_id: String,
+    /// Linked span ID (hex)
+    pub span_id: String,
+    /// W3C trace state of the linked span
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trace_state: Option<String>,
+    /// Link attributes
+    #[serde(default, skip_serializing_if = "Attributes::is_empty")]
+    pub attributes: Attributes,
+    /// Attributes dropped by the producer
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    pub dropped_attributes_count: u32,
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+const fn is_zero_u32(n: &u32) -> bool {
+    *n == 0
+}
+
 /// Represents a single span in a trace
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Span {
@@ -114,13 +153,37 @@ pub struct Span {
     pub status: Status,
     /// Service name (denormalized from resource)
     pub service_name: Option<String>,
+    /// Timed events attached to the span
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub events: Vec<SpanEvent>,
+    /// Links to other spans
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub links: Vec<SpanLink>,
+    /// W3C trace state
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trace_state: Option<String>,
+    /// Attributes dropped by the producer
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    pub dropped_attributes_count: u32,
+    /// Events dropped by the producer
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    pub dropped_events_count: u32,
+    /// Links dropped by the producer
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    pub dropped_links_count: u32,
+    /// Full resource attributes of the producer
+    #[serde(default, skip_serializing_if = "Attributes::is_empty")]
+    pub resource_attributes: Attributes,
+    /// Instrumentation scope that produced the span
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scope: Option<InstrumentationScope>,
 }
 
 impl Span {
     /// Build a span from its component fields.
     #[allow(clippy::too_many_arguments)]
     #[must_use]
-    pub const fn new(
+    pub fn new(
         span_id: String,
         trace_id: String,
         parent_span_id: Option<String>,
@@ -143,7 +206,59 @@ impl Span {
             attributes,
             status,
             service_name,
+            events: Vec::new(),
+            links: Vec::new(),
+            trace_state: None,
+            dropped_attributes_count: 0,
+            dropped_events_count: 0,
+            dropped_links_count: 0,
+            resource_attributes: Attributes::new(),
+            scope: None,
         }
+    }
+
+    /// Attach timed events.
+    #[must_use]
+    pub fn with_events(mut self, events: Vec<SpanEvent>) -> Self {
+        self.events = events;
+        self
+    }
+
+    /// Attach links to other spans.
+    #[must_use]
+    pub fn with_links(mut self, links: Vec<SpanLink>) -> Self {
+        self.links = links;
+        self
+    }
+
+    /// Set the W3C trace state.
+    #[must_use]
+    pub fn with_trace_state(mut self, trace_state: Option<String>) -> Self {
+        self.trace_state = trace_state;
+        self
+    }
+
+    /// Set producer-side dropped counts (attributes, events, links).
+    #[must_use]
+    pub const fn with_dropped_counts(mut self, attributes: u32, events: u32, links: u32) -> Self {
+        self.dropped_attributes_count = attributes;
+        self.dropped_events_count = events;
+        self.dropped_links_count = links;
+        self
+    }
+
+    /// Attach the full resource attributes.
+    #[must_use]
+    pub fn with_resource_attributes(mut self, resource_attributes: Attributes) -> Self {
+        self.resource_attributes = resource_attributes;
+        self
+    }
+
+    /// Attach the instrumentation scope.
+    #[must_use]
+    pub fn with_scope(mut self, scope: Option<InstrumentationScope>) -> Self {
+        self.scope = scope;
+        self
     }
 
     /// Get duration in nanoseconds
@@ -267,6 +382,56 @@ mod tests {
     #[test]
     fn test_span_serde() {
         let span = create_test_span();
+
+        let json = serde_json::to_string(&span).unwrap();
+        let deserialized: Span = serde_json::from_str(&json).unwrap();
+        assert_eq!(span, deserialized);
+    }
+
+    #[test]
+    fn test_span_deserializes_pre_v1_json() {
+        // Stored JSON written before events/links/fidelity fields existed.
+        let json = r#"{
+            "span_id": "s1", "trace_id": "t1", "parent_span_id": null,
+            "name": "op", "kind": "SERVER",
+            "start_time_unix_nano": 1, "end_time_unix_nano": 2,
+            "attributes": {}, "status": {"code": "OK", "message": null},
+            "service_name": "svc"
+        }"#;
+        let span: Span = serde_json::from_str(json).unwrap();
+        assert!(span.events.is_empty());
+        assert!(span.links.is_empty());
+        assert_eq!(span.trace_state, None);
+        assert_eq!(span.dropped_attributes_count, 0);
+        assert!(span.resource_attributes.is_empty());
+        assert_eq!(span.scope, None);
+    }
+
+    #[test]
+    fn test_span_serde_full_fidelity() {
+        let mut event_attrs = Attributes::new();
+        event_attrs.insert("exception.type", "IoError");
+        let span = create_test_span()
+            .with_events(vec![SpanEvent {
+                time_unix_nano: 1_000_000_000_000_000_500,
+                name: "exception".to_string(),
+                attributes: event_attrs,
+                dropped_attributes_count: 1,
+            }])
+            .with_links(vec![SpanLink {
+                trace_id: "other-trace".to_string(),
+                span_id: "other-span".to_string(),
+                trace_state: Some("vendor=1".to_string()),
+                attributes: Attributes::new(),
+                dropped_attributes_count: 0,
+            }])
+            .with_trace_state(Some("vendor=2".to_string()))
+            .with_dropped_counts(1, 2, 3)
+            .with_scope(Some(InstrumentationScope::new(
+                "test-lib".to_string(),
+                Some("1.0".to_string()),
+                Attributes::new(),
+            )));
 
         let json = serde_json::to_string(&span).unwrap();
         let deserialized: Span = serde_json::from_str(&json).unwrap();

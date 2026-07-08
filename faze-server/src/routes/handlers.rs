@@ -254,6 +254,60 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_get_trace_exposes_fidelity_fields() {
+        use faze::models::{SpanEvent, SpanLink};
+
+        let storage = Storage::new_in_memory().unwrap();
+        let mut resource_attrs = Attributes::new();
+        resource_attrs.insert("service.version", "1.0");
+        let span = Span::new(
+            "span1".to_string(),
+            "trace1".to_string(),
+            None,
+            "test operation".to_string(),
+            SpanKind::Server,
+            1_000_000_000,
+            2_000_000_000,
+            Attributes::new(),
+            Status::ok(),
+            Some("test-service".to_string()),
+        )
+        .with_events(vec![SpanEvent {
+            time_unix_nano: 1_500_000_000,
+            name: "exception".to_string(),
+            attributes: Attributes::new(),
+            dropped_attributes_count: 0,
+        }])
+        .with_links(vec![SpanLink {
+            trace_id: "other".to_string(),
+            span_id: "other-span".to_string(),
+            trace_state: None,
+            attributes: Attributes::new(),
+            dropped_attributes_count: 0,
+        }])
+        .with_resource_attributes(resource_attrs);
+        storage.insert_span(&span).unwrap();
+
+        let state = AppState {
+            storage: Arc::new(storage),
+        };
+
+        let response = get_trace(State(state), Path("trace1".to_string()))
+            .await
+            .into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let span_json = &json["spans"][0];
+        assert_eq!(span_json["events"][0]["name"], "exception");
+        assert_eq!(span_json["links"][0]["trace_id"], "other");
+        assert_eq!(span_json["resource_attributes"]["service.version"], "1.0");
+    }
+
+    #[tokio::test]
     async fn test_list_traces_with_filters() {
         let storage = Storage::new_in_memory().unwrap();
         for i in 0..5 {

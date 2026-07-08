@@ -1,9 +1,16 @@
+// AttributeValue mirrors the backend's untagged serde encoding: scalars,
+// arrays, and nested maps arrive as plain JSON values.
 export type AttributeValue =
-  | { type: "string"; value: string }
-  | { type: "int"; value: number }
-  | { type: "double"; value: number }
-  | { type: "bool"; value: boolean }
-  | { type: "bytes"; value: number[] }
-  | { type: "array"; value: AttributeValue[] };
+  | string
+  | number
+  | boolean
+  | AttributeValue[]
+  | { [key: string]: AttributeValue };
 
 export type Attributes = Record<string, AttributeValue>;
+
+export interface InstrumentationScope {
+  name: string;
+  version?: string;
+  attributes?: Attributes;
+}

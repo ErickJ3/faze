@@ -7,7 +7,12 @@ CREATE TABLE IF NOT EXISTS logs (
     attributes TEXT NOT NULL,
     trace_id TEXT,
     span_id TEXT,
-    service_name TEXT
+    service_name TEXT,
+    observed_time_unix_nano INTEGER,
+    event_name TEXT,
+    flags INTEGER,
+    resource_attributes TEXT,
+    scope TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_logs_time ON logs(time_unix_nano);
