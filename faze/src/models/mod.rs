@@ -2,6 +2,7 @@
 
 /// Attribute key-value pairs attached to telemetry items.
 pub mod attributes;
+mod db_enum;
 /// Log records emitted by services.
 pub mod log;
 /// Metrics with data points and aggregation semantics.

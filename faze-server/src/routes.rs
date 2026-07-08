@@ -16,6 +16,37 @@ pub struct AppState {
     pub storage: Arc<Storage>,
 }
 
+/// Error type shared by all API handlers; renders as `{"error": ...}` JSON.
+#[derive(Debug)]
+pub enum ApiError {
+    /// Requested entity does not exist.
+    NotFound(String),
+    /// Unexpected internal failure.
+    Internal(String),
+}
+
+impl From<faze::StorageError> for ApiError {
+    fn from(e: faze::StorageError) -> Self {
+        match e {
+            faze::StorageError::NotFound(msg) => Self::NotFound(msg),
+            other => {
+                error!("Storage error: {other}");
+                Self::Internal(other.to_string())
+            }
+        }
+    }
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> axum::response::Response {
+        let (status, message) = match self {
+            Self::NotFound(m) => (StatusCode::NOT_FOUND, m),
+            Self::Internal(m) => (StatusCode::INTERNAL_SERVER_ERROR, m),
+        };
+        (status, Json(serde_json::json!({ "error": message }))).into_response()
+    }
+}
+
 /// Query parameters for listing traces
 #[derive(Debug, Deserialize)]
 pub struct ListTracesQuery {
@@ -72,13 +103,13 @@ pub struct TraceInfo {
     pub root_span_kind: Option<faze::SpanKind>,
 }
 
-/// Query parameters for generic listing endpoints.
+/// Query parameters for listing metrics
 #[derive(Debug, Deserialize)]
-pub struct ListParams {
-    /// Optional service-name filter.
-    service: Option<String>,
-    /// Maximum number of results to return.
-    limit: Option<usize>,
+pub struct ListMetricsQuery {
+    /// Filter by service name
+    pub service: Option<String>,
+    /// Maximum number of results
+    pub limit: Option<usize>,
 }
 
 impl From<&faze::Trace> for TraceInfo {
@@ -102,175 +133,104 @@ impl From<&faze::Trace> for TraceInfo {
 pub async fn list_traces(
     State(state): State<AppState>,
     Query(params): Query<ListTracesQuery>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/traces - params: {:?}", params);
 
     let limit = params.limit.unwrap_or(100).min(1000); // Max 1000 traces
-
-    match state
+    let traces = state
         .storage
-        .list_traces(params.service.as_deref(), Some(limit))
-    {
-        Ok(traces) => {
-            let mut filtered_traces: Vec<_> = traces
-                .iter()
-                .filter(|t| {
-                    let duration = t.duration_ms();
+        .list_traces(params.service.as_deref(), Some(limit))?;
 
-                    if let Some(min) = params.min_duration
-                        && duration < min
-                    {
-                        return false;
-                    }
+    let mut filtered_traces: Vec<_> = traces
+        .iter()
+        .filter(|t| {
+            let duration = t.duration_ms();
 
-                    if let Some(max) = params.max_duration
-                        && duration > max
-                    {
-                        return false;
-                    }
-
-                    true
-                })
-                .map(TraceInfo::from)
-                .collect();
-
-            if let Some(offset) = params.offset {
-                filtered_traces = filtered_traces.into_iter().skip(offset).collect();
+            if let Some(min) = params.min_duration
+                && duration < min
+            {
+                return false;
             }
 
-            let total = filtered_traces.len();
+            if let Some(max) = params.max_duration
+                && duration > max
+            {
+                return false;
+            }
 
-            Json(TraceListResponse {
-                traces: filtered_traces,
-                total,
-            })
-            .into_response()
-        }
-        Err(e) => {
-            error!("Failed to list traces: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": format!("Failed to list traces: {e}")
-                })),
-            )
-                .into_response()
-        }
+            true
+        })
+        .map(TraceInfo::from)
+        .collect();
+
+    if let Some(offset) = params.offset {
+        filtered_traces = filtered_traces.into_iter().skip(offset).collect();
     }
+
+    let total = filtered_traces.len();
+
+    Ok(Json(TraceListResponse {
+        traces: filtered_traces,
+        total,
+    }))
 }
 
 /// GET /api/traces/:id - Get a specific trace with all spans
 pub async fn get_trace(
     State(state): State<AppState>,
     Path(trace_id): Path<String>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/traces/{}", trace_id);
 
-    match state.storage.get_trace_by_id(&trace_id) {
-        Ok(trace) => Json(trace).into_response(),
-        Err(faze::StorageError::NotFound(_)) => (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({
-                "error": format!("Trace not found: {trace_id}")
-            })),
-        )
-            .into_response(),
-        Err(e) => {
-            error!("Failed to get trace {}: {}", trace_id, e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": format!("Failed to get trace: {e}")
-                })),
-            )
-                .into_response()
-        }
-    }
+    let trace = state.storage.get_trace_by_id(&trace_id)?;
+    Ok(Json(trace))
 }
 
 /// GET /api/logs - List logs
 pub async fn list_logs(
     State(state): State<AppState>,
     Query(params): Query<ListLogsQuery>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/logs - params: {:?}", params);
 
     let limit = params.limit.unwrap_or(100).min(1000);
-
-    match state
+    let logs = state
         .storage
-        .list_logs(params.service.as_deref(), Some(limit))
-    {
-        Ok(logs) => Json(logs).into_response(),
-        Err(e) => {
-            error!("Failed to list logs: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": format!("Failed to list logs: {e}")
-                })),
-            )
-                .into_response()
-        }
-    }
+        .list_logs(params.service.as_deref(), Some(limit))?;
+
+    Ok(Json(logs))
 }
 
 /// GET /api/services - List unique service names
-pub async fn list_services(State(state): State<AppState>) -> impl IntoResponse {
+pub async fn list_services(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/services");
 
-    match state.storage.list_traces(None, Some(1000)) {
-        Ok(traces) => {
-            let mut services: Vec<String> =
-                traces.into_iter().filter_map(|t| t.service_name).collect();
+    let traces = state.storage.list_traces(None, Some(1000))?;
+    let mut services: Vec<String> = traces.into_iter().filter_map(|t| t.service_name).collect();
 
-            services.sort();
-            services.dedup();
+    services.sort();
+    services.dedup();
 
-            Json(serde_json::json!({
-                "services": services
-            }))
-            .into_response()
-        }
-        Err(e) => {
-            error!("Failed to list services: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": format!("Failed to list services: {e}")
-                })),
-            )
-                .into_response()
-        }
-    }
+    Ok(Json(serde_json::json!({
+        "services": services
+    })))
 }
 
 /// GET /api/metrics - List metrics
 pub async fn list_metrics(
     State(state): State<AppState>,
-    Query(params): Query<ListParams>,
-) -> impl IntoResponse {
+    Query(params): Query<ListMetricsQuery>,
+) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/metrics - params: {:?}", params);
 
-    match state
+    let limit = params.limit.unwrap_or(100).min(1000);
+    let metrics = state
         .storage
-        .list_metrics(params.service.as_deref(), params.limit)
-    {
-        Ok(metrics) => Json(serde_json::json!({
-            "metrics": metrics
-        }))
-        .into_response(),
-        Err(e) => {
-            error!("Failed to list metrics: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": format!("Failed to list metrics: {e}")
-                })),
-            )
-                .into_response()
-        }
-    }
+        .list_metrics(params.service.as_deref(), Some(limit))?;
+
+    Ok(Json(serde_json::json!({
+        "metrics": metrics
+    })))
 }
 
 /// GET /health - Health check endpoint

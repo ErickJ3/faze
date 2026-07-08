@@ -1,4 +1,4 @@
-use crate::convert::{convert_attributes, convert_resource};
+use crate::convert::{convert_attributes, resource_service_name};
 use crate::proto::opentelemetry::proto::metrics::v1::{
     HistogramDataPoint, Metric as OtlpMetric, NumberDataPoint, ResourceMetrics, SummaryDataPoint,
     metric,
@@ -95,11 +95,7 @@ pub fn convert_resource_metrics(resource_metrics: Vec<ResourceMetrics>) -> Vec<F
     let mut faze_metrics = Vec::new();
 
     for rm in resource_metrics {
-        let service_name = rm
-            .resource
-            .as_ref()
-            .map(convert_resource)
-            .and_then(|r| r.service_name().map(str::to_string));
+        let service_name = resource_service_name(rm.resource.as_ref());
 
         for sm in rm.scope_metrics {
             for metric in sm.metrics {

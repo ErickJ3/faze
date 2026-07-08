@@ -1,20 +1,18 @@
-use crate::convert::{bytes_to_hex, convert_attributes, convert_resource};
+use crate::convert::{bytes_to_hex, convert_attributes, resource_service_name};
 use crate::proto::opentelemetry::proto::trace::v1::{
     ResourceSpans, Span, SpanKind as OtlpSpanKind, Status, StatusCode as OtlpSpanStatusCode,
 };
 use faze::models::{Span as FazeSpan, SpanKind, Status as FazeStatus, StatusCode};
 
 /// Convert OTLP `SpanKind` to internal `SpanKind`
-#[allow(clippy::match_same_arms)]
 fn convert_span_kind(kind: i32) -> SpanKind {
     match OtlpSpanKind::try_from(kind) {
-        Ok(OtlpSpanKind::Unspecified) => SpanKind::Unspecified,
         Ok(OtlpSpanKind::Internal) => SpanKind::Internal,
         Ok(OtlpSpanKind::Server) => SpanKind::Server,
         Ok(OtlpSpanKind::Client) => SpanKind::Client,
         Ok(OtlpSpanKind::Producer) => SpanKind::Producer,
         Ok(OtlpSpanKind::Consumer) => SpanKind::Consumer,
-        Err(_) => SpanKind::Unspecified,
+        Ok(OtlpSpanKind::Unspecified) | Err(_) => SpanKind::Unspecified,
     }
 }
 
@@ -53,11 +51,7 @@ pub fn convert_resource_spans(resource_spans: &[ResourceSpans]) -> Vec<FazeSpan>
     let mut spans = Vec::new();
 
     for rs in resource_spans {
-        let service_name = rs
-            .resource
-            .as_ref()
-            .map(convert_resource)
-            .and_then(|r| r.service_name().map(str::to_string));
+        let service_name = resource_service_name(rs.resource.as_ref());
 
         for scope_spans in &rs.scope_spans {
             for span in &scope_spans.spans {
@@ -70,13 +64,11 @@ pub fn convert_resource_spans(resource_spans: &[ResourceSpans]) -> Vec<FazeSpan>
 }
 
 /// Convert OTLP `Status` to internal `Status`
-#[allow(clippy::match_same_arms)]
 fn convert_status(status: &Status) -> FazeStatus {
     let code = match OtlpSpanStatusCode::try_from(status.code) {
-        Ok(OtlpSpanStatusCode::Unset) => StatusCode::Unset,
         Ok(OtlpSpanStatusCode::Ok) => StatusCode::Ok,
         Ok(OtlpSpanStatusCode::Error) => StatusCode::Error,
-        Err(_) => StatusCode::Unset,
+        Ok(OtlpSpanStatusCode::Unset) | Err(_) => StatusCode::Unset,
     };
 
     let message = if status.message.is_empty() {

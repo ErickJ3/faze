@@ -39,31 +39,22 @@ impl TraceService for OtlpSpansCollector {
     ) -> Result<Response<ExportTraceServiceResponse>, Status> {
         let req = request.into_inner();
         let spans = convert_resource_spans(&req.resource_spans);
-        let mut rejected_spans = 0;
-        let mut error_messages = Vec::new();
 
-        for span in &spans {
-            if let Err(e) = self.storage.insert_span(span) {
-                error!("Failed to insert span {}: {}", span.span_id, e);
-                rejected_spans += 1;
-                error_messages.push(format!("span {}: {e}", span.span_id));
-            }
-        }
-
-        let response = if rejected_spans > 0 {
-            ExportTraceServiceResponse {
-                partial_success: Some(ExportTracePartialSuccess {
-                    rejected_spans,
-                    error_message: error_messages.join("; "),
-                }),
-            }
-        } else {
-            ExportTraceServiceResponse {
-                partial_success: None,
+        // Spans are inserted as one transaction; a failure rejects the whole batch.
+        let partial_success = match self.storage.insert_spans(&spans) {
+            Ok(()) => None,
+            Err(e) => {
+                error!("Failed to insert {} spans: {e}", spans.len());
+                Some(ExportTracePartialSuccess {
+                    rejected_spans: i64::try_from(spans.len()).unwrap_or(i64::MAX),
+                    error_message: e.to_string(),
+                })
             }
         };
 
-        Ok(Response::new(response))
+        Ok(Response::new(ExportTraceServiceResponse {
+            partial_success,
+        }))
     }
 }
 

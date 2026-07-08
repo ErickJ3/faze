@@ -1,4 +1,5 @@
 use super::attributes::Attributes;
+use super::db_enum::impl_db_str;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -16,23 +17,19 @@ pub enum MetricType {
     Summary,
 }
 
-impl MetricType {
-    /// Stable string used for database persistence. Round-trips with `parse_metric_type`.
-    #[must_use]
-    pub const fn as_db_str(self) -> &'static str {
-        match self {
-            Self::Gauge => "Gauge",
-            Self::Sum => "Sum",
-            Self::Histogram => "Histogram",
-            Self::Summary => "Summary",
-        }
-    }
-}
+impl_db_str!(
+    MetricType {
+        Gauge,
+        Sum,
+        Histogram,
+        Summary,
+    },
+    fallback = Gauge
+);
 
 /// Aggregation temporality for Sum and Histogram metrics
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[derive(Default)]
 pub enum AggregationTemporality {
     /// Temporality is not specified.
     #[default]
@@ -43,17 +40,14 @@ pub enum AggregationTemporality {
     Cumulative,
 }
 
-impl AggregationTemporality {
-    /// Stable string used for database persistence. Round-trips with `parse_temporality`.
-    #[must_use]
-    pub const fn as_db_str(self) -> &'static str {
-        match self {
-            Self::Unspecified => "Unspecified",
-            Self::Delta => "Delta",
-            Self::Cumulative => "Cumulative",
-        }
-    }
-}
+impl_db_str!(
+    AggregationTemporality {
+        Unspecified,
+        Delta,
+        Cumulative,
+    },
+    fallback = Unspecified
+);
 
 /// Represents a metric data point
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

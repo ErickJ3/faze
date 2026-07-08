@@ -1,51 +1,16 @@
 use crate::convert::{
-    bytes_to_hex, convert_any_value_to_string, convert_attributes, convert_resource,
+    bytes_to_hex, convert_any_value_to_string, convert_attributes, resource_service_name,
 };
-use crate::proto::opentelemetry::proto::logs::v1::{
-    LogRecord, ResourceLogs, SeverityNumber as OtlSeveryNumber,
-};
+use crate::proto::opentelemetry::proto::logs::v1::{LogRecord, ResourceLogs};
 use faze::models::log::{Log as FazeLog, SeverityLevel};
-
-/// Convert OTLP `SeverityNumber` to internal `SeverityLevel`.
-#[must_use]
-#[allow(clippy::match_same_arms)]
-pub fn convert_log_severity_level(kind: i32) -> SeverityLevel {
-    match OtlSeveryNumber::try_from(kind) {
-        Ok(OtlSeveryNumber::Unspecified) => SeverityLevel::Unspecified,
-        Ok(OtlSeveryNumber::Trace) => SeverityLevel::Trace,
-        Ok(OtlSeveryNumber::Trace2) => SeverityLevel::Trace2,
-        Ok(OtlSeveryNumber::Trace3) => SeverityLevel::Trace3,
-        Ok(OtlSeveryNumber::Trace4) => SeverityLevel::Trace4,
-        Ok(OtlSeveryNumber::Debug) => SeverityLevel::Debug,
-        Ok(OtlSeveryNumber::Debug2) => SeverityLevel::Debug2,
-        Ok(OtlSeveryNumber::Debug3) => SeverityLevel::Debug3,
-        Ok(OtlSeveryNumber::Debug4) => SeverityLevel::Debug4,
-        Ok(OtlSeveryNumber::Info) => SeverityLevel::Info,
-        Ok(OtlSeveryNumber::Info2) => SeverityLevel::Info2,
-        Ok(OtlSeveryNumber::Info3) => SeverityLevel::Info3,
-        Ok(OtlSeveryNumber::Info4) => SeverityLevel::Info4,
-        Ok(OtlSeveryNumber::Warn) => SeverityLevel::Warn,
-        Ok(OtlSeveryNumber::Warn2) => SeverityLevel::Warn2,
-        Ok(OtlSeveryNumber::Warn3) => SeverityLevel::Warn3,
-        Ok(OtlSeveryNumber::Warn4) => SeverityLevel::Warn4,
-        Ok(OtlSeveryNumber::Error) => SeverityLevel::Error,
-        Ok(OtlSeveryNumber::Error2) => SeverityLevel::Error2,
-        Ok(OtlSeveryNumber::Error3) => SeverityLevel::Error3,
-        Ok(OtlSeveryNumber::Error4) => SeverityLevel::Error4,
-        Ok(OtlSeveryNumber::Fatal) => SeverityLevel::Fatal,
-        Ok(OtlSeveryNumber::Fatal2) => SeverityLevel::Fatal2,
-        Ok(OtlSeveryNumber::Fatal3) => SeverityLevel::Fatal3,
-        Ok(OtlSeveryNumber::Fatal4) => SeverityLevel::Fatal4,
-        Err(_) => SeverityLevel::Unspecified,
-    }
-}
 
 #[allow(clippy::cast_possible_wrap)]
 fn convert_log(log: &LogRecord, service_name: Option<String>) -> FazeLog {
     let trace_id = Some(bytes_to_hex(&log.trace_id));
     let span_id = Some(bytes_to_hex(&log.span_id));
 
-    let severity_level = convert_log_severity_level(log.severity_number);
+    // OTLP severity numbers are the SeverityLevel discriminants (0..=24).
+    let severity_level = SeverityLevel::from_severity_number(log.severity_number);
     let severity_text = Some(severity_level.as_str().to_string());
 
     let attributes = convert_attributes(&log.attributes);
@@ -74,18 +39,85 @@ pub fn convert_resource_logs(resource_logs: &[ResourceLogs]) -> Vec<FazeLog> {
     let mut logs = Vec::new();
 
     for rs in resource_logs {
-        let service_name = rs
-            .resource
-            .as_ref()
-            .map(convert_resource)
-            .and_then(|r| r.service_name().map(str::to_string));
+        let service_name = resource_service_name(rs.resource.as_ref());
 
         for scope_logs in &rs.scope_logs {
-            for span in &scope_logs.log_records {
-                logs.push(convert_log(span, service_name.clone()));
+            for record in &scope_logs.log_records {
+                logs.push(convert_log(record, service_name.clone()));
             }
         }
     }
 
     logs
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::proto::opentelemetry::proto::{
+        common::v1::{AnyValue, KeyValue, any_value},
+        logs::v1::ScopeLogs,
+        resource::v1::Resource,
+    };
+
+    #[test]
+    fn test_severity_number_mapping() {
+        // OTLP severity numbers map 1:1 onto SeverityLevel discriminants.
+        assert_eq!(
+            SeverityLevel::from_severity_number(0),
+            SeverityLevel::Unspecified
+        );
+        assert_eq!(SeverityLevel::from_severity_number(1), SeverityLevel::Trace);
+        assert_eq!(SeverityLevel::from_severity_number(9), SeverityLevel::Info);
+        assert_eq!(
+            SeverityLevel::from_severity_number(17),
+            SeverityLevel::Error
+        );
+        assert_eq!(
+            SeverityLevel::from_severity_number(24),
+            SeverityLevel::Fatal4
+        );
+        assert_eq!(
+            SeverityLevel::from_severity_number(25),
+            SeverityLevel::Unspecified
+        );
+        assert_eq!(
+            SeverityLevel::from_severity_number(-1),
+            SeverityLevel::Unspecified
+        );
+    }
+
+    #[test]
+    fn test_convert_resource_logs() {
+        let resource_logs = vec![ResourceLogs {
+            resource: Some(Resource {
+                attributes: vec![KeyValue {
+                    key: "service.name".to_string(),
+                    value: Some(AnyValue {
+                        value: Some(any_value::Value::StringValue("svc".to_string())),
+                    }),
+                }],
+                dropped_attributes_count: 0,
+            }),
+            scope_logs: vec![ScopeLogs {
+                scope: None,
+                log_records: vec![LogRecord {
+                    time_unix_nano: 1_000_000_000,
+                    severity_number: 13,
+                    body: Some(AnyValue {
+                        value: Some(any_value::Value::StringValue("warn message".to_string())),
+                    }),
+                    ..Default::default()
+                }],
+                schema_url: String::new(),
+            }],
+            schema_url: String::new(),
+        }];
+
+        let logs = convert_resource_logs(&resource_logs);
+        assert_eq!(logs.len(), 1);
+        assert_eq!(logs[0].body, "warn message");
+        assert_eq!(logs[0].severity_level, SeverityLevel::Warn);
+        assert_eq!(logs[0].service_name, Some("svc".to_string()));
+    }
 }

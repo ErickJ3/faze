@@ -26,26 +26,14 @@ async fn export_traces(
     })?;
 
     let spans = convert_resource_spans(&request.resource_spans);
-    let mut rejected_spans = 0;
-    let mut error_messages = Vec::new();
 
-    for span in &spans {
-        if let Err(e) = storage.insert_span(span) {
-            error!("Failed to insert span {}: {}", span.span_id, e);
-            rejected_spans += 1;
-            error_messages.push(format!("span {}: {}", span.span_id, e));
+    // Spans are inserted as one transaction; a failure rejects the whole batch.
+    match storage.insert_spans(&spans) {
+        Ok(()) => Ok(StatusCode::OK.into_response()),
+        Err(e) => {
+            error!("Failed to insert {} spans: {e}", spans.len());
+            Ok((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())
         }
-    }
-
-    if rejected_spans > 0 {
-        error!(
-            "Rejected {} spans: {}",
-            rejected_spans,
-            error_messages.join("; ")
-        );
-        Ok((StatusCode::INTERNAL_SERVER_ERROR, error_messages.join("; ")).into_response())
-    } else {
-        Ok(StatusCode::OK.into_response())
     }
 }
 

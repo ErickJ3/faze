@@ -1,11 +1,11 @@
 use super::attributes::Attributes;
+use super::db_enum::impl_db_str;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Log severity level
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[derive(Default)]
 pub enum SeverityLevel {
     /// Severity not set.
     #[default]
@@ -60,6 +60,37 @@ pub enum SeverityLevel {
     Fatal4 = 24,
 }
 
+impl_db_str!(
+    SeverityLevel {
+        Unspecified,
+        Trace,
+        Trace2,
+        Trace3,
+        Trace4,
+        Debug,
+        Debug2,
+        Debug3,
+        Debug4,
+        Info,
+        Info2,
+        Info3,
+        Info4,
+        Warn,
+        Warn2,
+        Warn3,
+        Warn4,
+        Error,
+        Error2,
+        Error3,
+        Error4,
+        Fatal,
+        Fatal2,
+        Fatal3,
+        Fatal4,
+    },
+    fallback = Unspecified
+);
+
 impl SeverityLevel {
     /// Get a simplified string representation
     #[must_use]
@@ -75,36 +106,17 @@ impl SeverityLevel {
         }
     }
 
-    /// Stable string used for database persistence. Round-trips with `parse_severity_level`.
+    /// Map an OTLP severity number to a level.
+    ///
+    /// The enum discriminants 0..=24 are the OTLP severity numbers, so this is
+    /// an index into [`Self::ALL`]; out-of-range values map to `Unspecified`.
     #[must_use]
-    pub const fn as_db_str(self) -> &'static str {
-        match self {
-            Self::Unspecified => "Unspecified",
-            Self::Trace => "Trace",
-            Self::Trace2 => "Trace2",
-            Self::Trace3 => "Trace3",
-            Self::Trace4 => "Trace4",
-            Self::Debug => "Debug",
-            Self::Debug2 => "Debug2",
-            Self::Debug3 => "Debug3",
-            Self::Debug4 => "Debug4",
-            Self::Info => "Info",
-            Self::Info2 => "Info2",
-            Self::Info3 => "Info3",
-            Self::Info4 => "Info4",
-            Self::Warn => "Warn",
-            Self::Warn2 => "Warn2",
-            Self::Warn3 => "Warn3",
-            Self::Warn4 => "Warn4",
-            Self::Error => "Error",
-            Self::Error2 => "Error2",
-            Self::Error3 => "Error3",
-            Self::Error4 => "Error4",
-            Self::Fatal => "Fatal",
-            Self::Fatal2 => "Fatal2",
-            Self::Fatal3 => "Fatal3",
-            Self::Fatal4 => "Fatal4",
-        }
+    pub fn from_severity_number(n: i32) -> Self {
+        usize::try_from(n)
+            .ok()
+            .and_then(|i| Self::ALL.get(i))
+            .copied()
+            .unwrap_or_default()
     }
 }
 
