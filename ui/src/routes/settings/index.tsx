@@ -1,8 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { getSettings, saveSettings, type Settings } from "@/lib/settings";
+import {
+  getSettings,
+  saveSettings,
+  resetSettings,
+  type Settings,
+} from "@/lib/settings";
 import { useToast } from "@/components/shared/toast-provider";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/settings/")({
   component: SettingsPage,
@@ -10,21 +23,19 @@ export const Route = createFileRoute("/settings/")({
 
 function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(getSettings());
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const { showToast } = useToast();
 
   const handleSave = () => {
     saveSettings(settings);
     showToast("Settings saved", "success");
-    window.location.reload();
   };
 
   const handleReset = () => {
-    const confirmed = confirm("Are you sure you want to reset all settings?");
-    if (confirmed) {
-      localStorage.clear();
-      showToast("Settings reset", "success");
-      setTimeout(() => window.location.reload(), 500);
-    }
+    resetSettings();
+    setSettings(getSettings());
+    setResetDialogOpen(false);
+    showToast("Settings reset", "success");
   };
 
   return (
@@ -94,16 +105,16 @@ function SettingsPage() {
         </section>
 
         <section className="border border-border p-6">
-          <h2 className="text-sm font-mono mb-4">Database</h2>
+          <h2 className="text-sm font-mono mb-4">Reset</h2>
 
           <div className="space-y-4">
             <div>
               <p className="text-sm text-foreground/50 mb-3">
-                Clear local database and reset application state
+                Restore all settings to their defaults
               </p>
               <button
-                onClick={handleReset}
-                className="text-sm border border-red-500 text-red-500 px-4 py-2 hover:bg-red-500/10 transition-colors"
+                onClick={() => setResetDialogOpen(true)}
+                className="text-sm border border-destructive text-destructive px-4 py-2 hover:bg-destructive/10 transition-colors"
               >
                 Reset Settings
               </button>
@@ -120,6 +131,34 @@ function SettingsPage() {
           </button>
         </div>
       </div>
+
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="rounded-none shadow-none">
+          <DialogHeader>
+            <DialogTitle className="font-mono text-base">
+              Reset settings?
+            </DialogTitle>
+            <DialogDescription>
+              All settings will be restored to their defaults. This cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              onClick={() => setResetDialogOpen(false)}
+              className="text-sm border border-border px-4 py-2 hover:bg-card transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleReset}
+              className="text-sm border border-destructive text-destructive px-4 py-2 hover:bg-destructive/10 transition-colors"
+            >
+              Reset
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

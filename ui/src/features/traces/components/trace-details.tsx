@@ -32,7 +32,15 @@ export function TraceDetails({ trace }: TraceDetailsProps) {
         </div>
       </div>
 
-      <SpanWaterfall spans={trace.spans} />
+      {trace.spans.length === 0 ? (
+        <div className="flex items-center justify-center h-32 border border-border">
+          <p className="text-sm text-foreground/50">
+            No spans recorded for this trace
+          </p>
+        </div>
+      ) : (
+        <SpanWaterfall spans={trace.spans} />
+      )}
     </div>
   );
 }

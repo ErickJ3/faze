@@ -18,6 +18,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      "/api": "http://localhost:7070",
+      "/health": "http://localhost:7070",
+    },
+  },
   test: {
     globals: true,
     environment: "jsdom",

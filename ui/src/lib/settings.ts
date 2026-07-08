@@ -1,5 +1,7 @@
 const SETTINGS_KEY = "faze-settings";
 
+export const SETTINGS_CHANGED_EVENT = "faze:settings-changed";
+
 export interface Settings {
   autoRefresh: boolean;
   refreshInterval: number;
@@ -25,7 +27,17 @@ export function getSettings(): Settings {
 export function saveSettings(settings: Settings): void {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    window.dispatchEvent(new Event(SETTINGS_CHANGED_EVENT));
   } catch (err) {
     console.error("Failed to save settings:", err);
+  }
+}
+
+export function resetSettings(): void {
+  try {
+    localStorage.removeItem(SETTINGS_KEY);
+    window.dispatchEvent(new Event(SETTINGS_CHANGED_EVENT));
+  } catch (err) {
+    console.error("Failed to reset settings:", err);
   }
 }
