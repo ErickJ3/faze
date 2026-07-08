@@ -48,7 +48,7 @@ impl ApiServer {
     }
 
     /// Start the API server
-    pub async fn serve(self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn serve(self) -> std::io::Result<()> {
         let app = self.build_router();
         let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
 
