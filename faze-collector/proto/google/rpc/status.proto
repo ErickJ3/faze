@@ -1,0 +1,17 @@
+// Trimmed vendored copy of google/rpc/status.proto.
+//
+// Only `code` and `message` are kept; the `repeated google.protobuf.Any
+// details = 3` field is omitted to avoid a prost-types/pbjson-types
+// dependency. This stays wire-compatible with the real google.rpc.Status:
+// an absent repeated field encodes to nothing, and we never emit details.
+syntax = "proto3";
+
+package google.rpc;
+
+message Status {
+  // The status code, one of the enum values of google.rpc.Code.
+  int32 code = 1;
+
+  // A developer-facing error message in English.
+  string message = 2;
+}

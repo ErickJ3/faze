@@ -14,12 +14,18 @@ tonic-prost.workspace = true
 prost.workspace = true
 tracing.workspace = true
 axum.workspace = true
+pbjson = "0.9"
+serde.workspace = true
+serde_json.workspace = true
+flate2 = "1"
+base64 = "0.22"
 
 [dev-dependencies]
 tower.workspace = true
 
 [build-dependencies]
 tonic-prost-build.workspace = true
+pbjson-build = "0.9"
 
 [lints]
 workspace = true
