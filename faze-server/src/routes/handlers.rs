@@ -1,7 +1,9 @@
 //! The API route handlers.
 
 use super::AppState;
-use super::dto::{ListLogsQuery, ListMetricsQuery, ListTracesQuery, TraceInfo, TraceListResponse};
+use super::dto::{
+    ListLogsQuery, ListMetricsQuery, ListTracesQuery, StatsResponse, TraceInfo, TraceListResponse,
+};
 use super::error::ApiError;
 use axum::{
     Json,
@@ -74,6 +76,11 @@ pub async fn list_logs(
 ) -> Result<impl IntoResponse, ApiError> {
     info!("GET /api/logs - params: {:?}", params);
 
+    if let Some(trace_id) = params.trace_id.as_deref() {
+        let logs = state.storage.get_logs_by_trace_id(trace_id)?;
+        return Ok(Json(logs));
+    }
+
     let limit = params.limit.unwrap_or(100).min(1000);
     let logs = state
         .storage
@@ -112,6 +119,34 @@ pub async fn list_metrics(
     Ok(Json(serde_json::json!({
         "metrics": metrics
     })))
+}
+
+/// Number of buckets returned by the stats activity timeline.
+const ACTIVITY_BUCKETS: usize = 30;
+
+/// GET /api/stats - Aggregate statistics across all stored telemetry
+pub async fn get_stats(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
+    info!("GET /api/stats");
+
+    let storage = &state.storage;
+    let response = StatsResponse {
+        spans: storage.count_spans()?,
+        logs: storage.count_logs()?,
+        metrics: storage.count_metrics()?,
+        traces: storage.trace_stats()?.into(),
+        services: storage
+            .service_stats()?
+            .into_iter()
+            .map(Into::into)
+            .collect(),
+        activity: storage
+            .trace_time_buckets(ACTIVITY_BUCKETS)?
+            .into_iter()
+            .map(Into::into)
+            .collect(),
+    };
+
+    Ok(Json(response))
 }
 
 /// GET /health - Health check endpoint
@@ -387,6 +422,56 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_get_stats_empty() {
+        let storage = Storage::new_in_memory().unwrap();
+        let state = AppState {
+            storage: Arc::new(storage),
+        };
+
+        let response = get_stats(State(state)).await.into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_get_stats_with_data() {
+        let storage = Storage::new_in_memory().unwrap();
+        let ok_span = Span::new(
+            "span1".to_string(),
+            "trace1".to_string(),
+            None,
+            "ok operation".to_string(),
+            SpanKind::Server,
+            1_000_000_000,
+            2_000_000_000,
+            Attributes::new(),
+            Status::ok(),
+            Some("service-a".to_string()),
+        );
+        let error_span = Span::new(
+            "span2".to_string(),
+            "trace2".to_string(),
+            None,
+            "failing operation".to_string(),
+            SpanKind::Server,
+            3_000_000_000,
+            4_000_000_000,
+            Attributes::new(),
+            Status::error("boom"),
+            Some("service-b".to_string()),
+        );
+        storage.insert_spans(&[ok_span, error_span]).unwrap();
+
+        let state = AppState {
+            storage: Arc::new(storage),
+        };
+
+        let response = get_stats(State(state)).await.into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
     async fn test_list_logs_empty() {
         let storage = Storage::new_in_memory().unwrap();
         let state = AppState {
@@ -395,6 +480,39 @@ mod tests {
 
         let query = ListLogsQuery {
             service: None,
+            trace_id: None,
+            limit: None,
+        };
+
+        let response = list_logs(State(state), Query(query)).await.into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_list_logs_by_trace_id() {
+        use faze::models::{Log, SeverityLevel};
+
+        let storage = Storage::new_in_memory().unwrap();
+        let log = Log::new(
+            1_000_000_000,
+            SeverityLevel::Info,
+            None,
+            "correlated log".to_string(),
+            Attributes::new(),
+            Some("trace1".to_string()),
+            Some("span1".to_string()),
+            Some("test-service".to_string()),
+        );
+        storage.insert_log(&log).unwrap();
+
+        let state = AppState {
+            storage: Arc::new(storage),
+        };
+
+        let query = ListLogsQuery {
+            service: None,
+            trace_id: Some("trace1".to_string()),
             limit: None,
         };
 

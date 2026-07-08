@@ -1,4 +1,5 @@
 import { useProject } from "@/hooks/api";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Topbar() {
   const { data: project } = useProject();
@@ -22,7 +23,8 @@ export function Topbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-4">
-        <div className="text-sm text-muted-foreground font-mono">Cltr+K</div>
+        <div className="text-sm text-muted-foreground font-mono">Ctrl+K</div>
+        <ThemeToggle />
       </div>
     </header>
   );

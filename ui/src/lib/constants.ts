@@ -1,70 +1,34 @@
-import type { SeverityLevel, SpanKind, StatusCode } from "@/types";
+import type { SeverityLevel } from "@/types";
 
+/// Duration thresholds (ms) for fast/medium/slow badge coloring.
+export const DURATION_FAST_MS = 100;
+export const DURATION_SLOW_MS = 500;
+
+/// Collapses the OTLP fine-grained levels (e.g. ERROR2..4) into display groups.
 export const SEVERITY_LEVEL_MAP: Record<SeverityLevel, string> = {
-  Unspecified: "UNSPECIFIED",
-  Trace: "TRACE",
-  Trace2: "TRACE",
-  Trace3: "TRACE",
-  Trace4: "TRACE",
-  Debug: "DEBUG",
-  Debug2: "DEBUG",
-  Debug3: "DEBUG",
-  Debug4: "DEBUG",
-  Info: "INFO",
-  Info2: "INFO",
-  Info3: "INFO",
-  Info4: "INFO",
-  Warn: "WARN",
-  Warn2: "WARN",
-  Warn3: "WARN",
-  Warn4: "WARN",
-  Error: "ERROR",
-  Error2: "ERROR",
-  Error3: "ERROR",
-  Error4: "ERROR",
-  Fatal: "FATAL",
-  Fatal2: "FATAL",
-  Fatal3: "FATAL",
-  Fatal4: "FATAL",
+  UNSPECIFIED: "UNSPECIFIED",
+  TRACE: "TRACE",
+  TRACE2: "TRACE",
+  TRACE3: "TRACE",
+  TRACE4: "TRACE",
+  DEBUG: "DEBUG",
+  DEBUG2: "DEBUG",
+  DEBUG3: "DEBUG",
+  DEBUG4: "DEBUG",
+  INFO: "INFO",
+  INFO2: "INFO",
+  INFO3: "INFO",
+  INFO4: "INFO",
+  WARN: "WARN",
+  WARN2: "WARN",
+  WARN3: "WARN",
+  WARN4: "WARN",
+  ERROR: "ERROR",
+  ERROR2: "ERROR",
+  ERROR3: "ERROR",
+  ERROR4: "ERROR",
+  FATAL: "FATAL",
+  FATAL2: "FATAL",
+  FATAL3: "FATAL",
+  FATAL4: "FATAL",
 };
-
-export const SPAN_KIND_MAP: Record<SpanKind, string> = {
-  Unspecified: "UNSPECIFIED",
-  Internal: "INTERNAL",
-  Server: "SERVER",
-  Client: "CLIENT",
-  Producer: "PRODUCER",
-  Consumer: "CONSUMER",
-};
-
-export const STATUS_CODE_MAP: Record<StatusCode, string> = {
-  Unset: "UNSET",
-  Ok: "OK",
-  Error: "ERROR",
-};
-
-export function getSeverityColor(level: string): string {
-  const upperLevel = level.toUpperCase();
-
-  if (upperLevel === "FATAL" || upperLevel === "ERROR") {
-    return "bg-red-500/10 text-red-500";
-  }
-
-  if (upperLevel === "WARN") {
-    return "bg-yellow-500/10 text-yellow-500";
-  }
-
-  if (upperLevel === "INFO") {
-    return "bg-blue-500/10 text-blue-500";
-  }
-
-  if (upperLevel === "DEBUG") {
-    return "bg-purple-500/10 text-purple-500";
-  }
-
-  if (upperLevel === "TRACE") {
-    return "bg-gray-500/10 text-gray-500";
-  }
-
-  return "bg-gray-500/10 text-gray-500";
-}

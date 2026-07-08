@@ -1,8 +1,8 @@
 import type { Attributes } from "./common";
 
-export type MetricType = "Gauge" | "Sum" | "Histogram" | "Summary";
+export type MetricType = "GAUGE" | "SUM" | "HISTOGRAM" | "SUMMARY";
 
-export type AggregationTemporality = "Unspecified" | "Delta" | "Cumulative";
+export type AggregationTemporality = "UNSPECIFIED" | "DELTA" | "CUMULATIVE";
 
 export interface MetricDataPoint {
   time_unix_nano: number;

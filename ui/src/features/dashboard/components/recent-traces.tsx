@@ -23,7 +23,7 @@ export function RecentTraces({ traces }: RecentTracesProps) {
       </div>
 
       <div className="divide-y divide-border">
-        {traces.slice(0, 5).map((trace) => (
+        {traces.map((trace) => (
           <Link
             key={trace.trace_id}
             to="/traces/$traceId"
@@ -42,7 +42,7 @@ export function RecentTraces({ traces }: RecentTracesProps) {
             <div className="flex items-center gap-3">
               <DurationBadge durationMs={trace.duration_ms} />
               {trace.has_errors && (
-                <span className="text-xs text-red-500">ERROR</span>
+                <span className="text-xs text-destructive">ERROR</span>
               )}
             </div>
           </Link>

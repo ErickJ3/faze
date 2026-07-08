@@ -6,6 +6,7 @@ mod metrics;
 mod rows;
 mod schema;
 mod spans;
+mod stats;
 
 use rusqlite::Connection;
 use std::path::Path;
@@ -14,6 +15,7 @@ use thiserror::Error;
 
 pub use db_path::{detect_project_root, get_data_dir, get_project_db_path};
 use schema::init_schema;
+pub use stats::{ServiceStat, TraceStats, TraceTimeBucket};
 
 /// Errors returned by [`Storage`] operations.
 #[derive(Debug, Error)]

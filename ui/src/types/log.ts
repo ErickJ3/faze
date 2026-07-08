@@ -1,31 +1,31 @@
 import type { Attributes } from "./common";
 
 export type SeverityLevel =
-  | "Unspecified"
-  | "Trace"
-  | "Trace2"
-  | "Trace3"
-  | "Trace4"
-  | "Debug"
-  | "Debug2"
-  | "Debug3"
-  | "Debug4"
-  | "Info"
-  | "Info2"
-  | "Info3"
-  | "Info4"
-  | "Warn"
-  | "Warn2"
-  | "Warn3"
-  | "Warn4"
-  | "Error"
-  | "Error2"
-  | "Error3"
-  | "Error4"
-  | "Fatal"
-  | "Fatal2"
-  | "Fatal3"
-  | "Fatal4";
+  | "UNSPECIFIED"
+  | "TRACE"
+  | "TRACE2"
+  | "TRACE3"
+  | "TRACE4"
+  | "DEBUG"
+  | "DEBUG2"
+  | "DEBUG3"
+  | "DEBUG4"
+  | "INFO"
+  | "INFO2"
+  | "INFO3"
+  | "INFO4"
+  | "WARN"
+  | "WARN2"
+  | "WARN3"
+  | "WARN4"
+  | "ERROR"
+  | "ERROR2"
+  | "ERROR3"
+  | "ERROR4"
+  | "FATAL"
+  | "FATAL2"
+  | "FATAL3"
+  | "FATAL4";
 
 export interface Log {
   time_unix_nano: number;
@@ -41,5 +41,6 @@ export interface Log {
 export interface LogFilters {
   service?: string;
   level?: string;
+  trace_id?: string;
   limit?: number;
 }

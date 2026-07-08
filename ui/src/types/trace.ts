@@ -1,14 +1,14 @@
 import type { Attributes } from "./common";
 
 export type SpanKind =
-  | "Unspecified"
-  | "Internal"
-  | "Server"
-  | "Client"
-  | "Producer"
-  | "Consumer";
+  | "UNSPECIFIED"
+  | "INTERNAL"
+  | "SERVER"
+  | "CLIENT"
+  | "PRODUCER"
+  | "CONSUMER";
 
-export type StatusCode = "Unset" | "Ok" | "Error";
+export type StatusCode = "UNSET" | "OK" | "ERROR";
 
 export interface Status {
   code: StatusCode;

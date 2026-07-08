@@ -1,33 +1,17 @@
-import { useTraces } from "@/hooks/api";
-import { useServices } from "@/hooks/api";
+import { useStats, useTraces } from "@/hooks/api";
 
 export function useDashboardData() {
-  const { data: tracesData, isLoading: tracesLoading } = useTraces({
-    limit: 10,
-  });
-  const { data: servicesData, isLoading: servicesLoading } = useServices();
-
-  const traces = tracesData?.traces ?? [];
-  const services = servicesData ?? [];
-  const totalTraces = tracesData?.total ?? 0;
-
-  const errorCount = traces.filter((t) => t.has_errors).length;
-  const errorRate = traces.length > 0 ? (errorCount / traces.length) * 100 : 0;
-
-  const avgDuration =
-    traces.length > 0
-      ? traces.reduce((acc, t) => acc + t.duration_ms, 0) / traces.length
-      : 0;
+  const stats = useStats();
+  const traces = useTraces({ limit: 5 });
 
   return {
-    traces,
-    services,
-    stats: {
-      totalServices: services.length,
-      totalTraces,
-      errorRate: errorRate.toFixed(1),
-      avgDuration: avgDuration.toFixed(0),
+    stats: stats.data,
+    recentTraces: traces.data?.traces ?? [],
+    isLoading: stats.isLoading || traces.isLoading,
+    error: stats.error ?? traces.error,
+    refetch: () => {
+      void stats.refetch();
+      void traces.refetch();
     },
-    isLoading: tracesLoading || servicesLoading,
   };
 }

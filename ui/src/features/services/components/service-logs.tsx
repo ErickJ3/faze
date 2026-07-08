@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { Log } from "@/types";
 import { formatRelativeTime } from "@/lib/formatters";
-import { getSeverityColor } from "@/lib/constants";
+import { getSeverityBgColor, getSeverityColor } from "@/lib/colors";
 
 interface ServiceLogsProps {
   logs: Log[];
@@ -44,7 +44,7 @@ export function ServiceLogs({ logs, serviceName }: ServiceLogsProps) {
                 <div className="flex items-center gap-2 mb-1">
                   {log.severity_level && (
                     <span
-                      className={`text-xs px-2 py-0.5 ${getSeverityColor(log.severity_level)}`}
+                      className={`text-xs px-2 py-0.5 ${getSeverityColor(log.severity_level)} ${getSeverityBgColor(log.severity_level)}`}
                     >
                       {log.severity_level}
                     </span>

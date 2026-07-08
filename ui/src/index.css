@@ -191,10 +191,10 @@
 @keyframes highlight-pulse {
   0%,
   100% {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: color-mix(in oklab, var(--foreground) 3%, transparent);
   }
   50% {
-    background-color: rgba(59, 130, 246, 0.2);
+    background-color: color-mix(in oklab, var(--primary) 20%, transparent);
   }
 }
 
@@ -217,18 +217,19 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: color-mix(in oklab, var(--foreground) 12%, transparent);
     border-radius: 0px;
     transition: background 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in oklab, var(--foreground) 25%, transparent);
   }
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 12%, transparent)
+      transparent;
   }
 
   * {

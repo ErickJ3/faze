@@ -1,4 +1,5 @@
 import { formatDurationCompact } from "@/lib/formatters";
+import { DURATION_FAST_MS, DURATION_SLOW_MS } from "@/lib/constants";
 
 interface DurationBadgeProps {
   durationMs: number;
@@ -6,9 +7,10 @@ interface DurationBadgeProps {
 
 export function DurationBadge({ durationMs }: DurationBadgeProps) {
   const getColor = () => {
-    if (durationMs < 100) return "text-green-500 bg-green-500/10";
-    if (durationMs < 500) return "text-yellow-500 bg-yellow-500/10";
-    return "text-red-500 bg-red-500/10";
+    if (durationMs < DURATION_FAST_MS) return "text-green-500 bg-green-500/10";
+    if (durationMs < DURATION_SLOW_MS)
+      return "text-yellow-500 bg-yellow-500/10";
+    return "text-destructive bg-destructive/10";
   };
 
   return (

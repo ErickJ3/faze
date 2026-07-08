@@ -19,15 +19,15 @@ export const severityBgColors: Record<string, string> = {
 };
 
 export const statusColors: Record<StatusCode, string> = {
-  Unset: "text-foreground/40",
-  Ok: "text-green-500",
-  Error: "text-red-500",
+  UNSET: "text-foreground/40",
+  OK: "text-green-500",
+  ERROR: "text-red-500",
 };
 
 export const statusBgColors: Record<StatusCode, string> = {
-  Unset: "bg-foreground/5",
-  Ok: "bg-green-500/10",
-  Error: "bg-red-500/10",
+  UNSET: "bg-foreground/5",
+  OK: "bg-green-500/10",
+  ERROR: "bg-red-500/10",
 };
 
 export function getSeverityColor(level: SeverityLevel): string {
